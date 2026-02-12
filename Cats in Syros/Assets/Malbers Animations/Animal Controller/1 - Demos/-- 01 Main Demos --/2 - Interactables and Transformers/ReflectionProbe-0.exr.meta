@@ -1,5 +1,13 @@
 fileFormatVersion: 2
 guid: 7351ee194221fce47ba9029cf67f2d32
+AssetOrigin:
+  serializedVersion: 1
+  productId: 79902
+  packageName: Horse Animset Pro (Riding System)
+  packageVersion: 4.5.1
+  assetPath: Assets/Malbers Animations/Animal Controller/1 - Demos/-- 01 Main Demos
+    --/2 - Interactables and Transformers/ReflectionProbe-0.exr
+  uploadId: 848732
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -72,7 +80,7 @@ TextureImporter:
     maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
-    textureCompression: 1
+    textureCompression: 0
     compressionQuality: 100
     crunchedCompression: 0
     allowsAlphaSplitting: 0
@@ -106,6 +114,32 @@ TextureImporter:
     ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 100
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: iOS
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 100
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
     serializedVersion: 2
     sprites: []
@@ -128,11 +162,3 @@ TextureImporter:
   userData: 
   assetBundleName: 
   assetBundleVariant: 
-AssetOrigin:
-  serializedVersion: 1
-  productId: 79902
-  packageName: Horse Animset Pro (Riding System)
-  packageVersion: 4.5.1
-  assetPath: Assets/Malbers Animations/Animal Controller/1 - Demos/-- 01 Main Demos
-    --/2 - Interactables and Transformers/ReflectionProbe-0.exr
-  uploadId: 848732

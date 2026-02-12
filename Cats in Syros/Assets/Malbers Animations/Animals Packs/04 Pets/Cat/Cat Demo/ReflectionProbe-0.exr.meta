@@ -1,5 +1,12 @@
 fileFormatVersion: 2
 guid: 861bfb583c59f2143a0f25b2850e00d0
+AssetOrigin:
+  serializedVersion: 1
+  productId: 326824
+  packageName: Milo the Cat
+  packageVersion: 1.01
+  assetPath: Assets/Malbers Animations/Animals Packs/04 Pets/Cat/Cat Demo/ReflectionProbe-0.exr
+  uploadId: 815552
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -72,7 +79,7 @@ TextureImporter:
     maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
-    textureCompression: 1
+    textureCompression: 0
     compressionQuality: 100
     crunchedCompression: 0
     allowsAlphaSplitting: 0
@@ -106,6 +113,32 @@ TextureImporter:
     ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 100
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: iOS
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 100
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
     serializedVersion: 2
     sprites: []
@@ -128,10 +161,3 @@ TextureImporter:
   userData: 
   assetBundleName: 
   assetBundleVariant: 
-AssetOrigin:
-  serializedVersion: 1
-  productId: 326824
-  packageName: Milo the Cat
-  packageVersion: 1.01
-  assetPath: Assets/Malbers Animations/Animals Packs/04 Pets/Cat/Cat Demo/ReflectionProbe-0.exr
-  uploadId: 815552
