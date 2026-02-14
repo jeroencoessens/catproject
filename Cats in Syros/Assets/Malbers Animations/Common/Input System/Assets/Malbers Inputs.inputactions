@@ -34,6 +34,15 @@
                     "initialStateCheck": false
                 },
                 {
+                    "name": "SprintToggle",
+                    "type": "Button",
+                    "id": "2d74d93c-1ae7-436e-a4ac-fbb642fd14c2",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "Action1",
                     "type": "Button",
                     "id": "78789b4e-a1fb-441f-99c7-99fc965716ad",
@@ -244,8 +253,8 @@
             "bindings": [
                 {
                     "name": "",
-                    "id": "a73f5288-cc64-4972-ae2f-5ba56c2f5ec1",
-                    "path": "<Gamepad>/leftStickPress",
+                    "id": "b442327f-f6ee-4aec-b910-653a95ab564a",
+                    "path": "<Gamepad>/rightTrigger",
                     "interactions": "",
                     "processors": "",
                     "groups": "Gamepad",
@@ -261,6 +270,28 @@
                     "processors": "",
                     "groups": "Keyboard and Mouse",
                     "action": "Sprint",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "d70f10f5-94ea-4f30-9062-6f7eb6372779",
+                    "path": "<Gamepad>/leftStickPress",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Gamepad",
+                    "action": "SprintToggle",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "83874bef-ee50-4433-8c55-c952a938c47b",
+                    "path": "<Keyboard>/shift",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard and Mouse",
+                    "action": "SprintToggle",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },

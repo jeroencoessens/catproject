@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 11ed6fdc3af3448db8f8870aa67c0471
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures:
+  - _OverlayMask: {fileID: 2800000, guid: 0c603ddaed3b4229b620df5654254cbf, type: 3}
+  - _HeightMask: {fileID: 2800000, guid: 5227173c99624896899a41f4153b3c55, type: 3}
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 340990
+  packageName: Lakefell - Stylized Fantasy Village
+  packageVersion: 1.0
+  assetPath: Assets/Raygeas/Shared Assets/Shaders/URP/Building_Modules_URP.shader
+  uploadId: 820804

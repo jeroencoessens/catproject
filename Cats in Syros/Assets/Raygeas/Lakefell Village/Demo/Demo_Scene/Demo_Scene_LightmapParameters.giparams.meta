@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 83f0ab102281e2542b6752d7678d33fc
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 111300000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 340990
+  packageName: Lakefell - Stylized Fantasy Village
+  packageVersion: 1.0
+  assetPath: Assets/Raygeas/Lakefell Village/Demo/Demo_Scene/Demo_Scene_LightmapParameters.giparams
+  uploadId: 820804
