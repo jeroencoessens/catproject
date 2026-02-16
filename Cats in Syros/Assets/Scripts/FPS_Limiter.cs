@@ -2,15 +2,47 @@ using UnityEngine;
 using TMPro;
 using Unity.VisualScripting;
 
+#if UNITY_EDITOR
+using UnityEditor;
+
+[CustomEditor(typeof(FPS_Limiter))]
+public class FPSEditor : Editor
+{
+    public override void OnInspectorGUI()
+    {
+        base.OnInspectorGUI();
+        if (GUILayout.Button("Toggle FPS Limiter"))
+        {
+            if(FPS_Limiter.instance) FPS_Limiter.instance.ToggleFPS();
+        }
+    }
+}
+#endif
+
 public class FPS_Limiter : MonoBehaviour
 {
     public int FPS = 120;
     public TMP_Text m_FPSText;
     public bool showFpsText = true;
+    public bool fpsIsLimited = false;
+    
+    public static FPS_Limiter instance;
     
     void Start()
     {
-        Application.targetFrameRate = FPS;
+        instance = this;
+        ChangeFPS();
+    }
+
+    public void ToggleFPS()
+    {
+        fpsIsLimited = !fpsIsLimited;
+        ChangeFPS();
+    }
+
+    private void ChangeFPS()
+    {
+        Application.targetFrameRate = fpsIsLimited ? FPS : int.MaxValue;
     }
 
     void Update()
@@ -32,3 +64,5 @@ public class FPS_Limiter : MonoBehaviour
         if(m_FPSText) m_FPSText.text = "<color=#" + color.ToHexString() + ">" + fps.ToString("F0");
     }
 }
+
+
