@@ -1,0 +1,58 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36e82ababb09f4bc984b08a2dd6a2011, type: 3}
+  m_Name: SyrosConfig
+  m_EditorClassIdentifier: Assembly-CSharp::SyrosWorld.SyrosWorldConfig
+  minLon: 24.858819
+  maxLon: 24.972383
+  minLat: 37.363064
+  maxLat: 37.512692
+  heightmapMinLon: 24.858819
+  heightmapMaxLon: 24.972383
+  heightmapMinLat: 37.363064
+  heightmapMaxLat: 37.512692
+  targetWorldWidth: 2000
+  targetWorldLength: 3300
+  terrainMaxHeight: 450
+  warpBinsX: 128
+  warpBinsY: 128
+  minDensityFloor: 0.05
+  smoothingSigma: 5
+  densityExponent: 1.2
+  terrainResolution: 1025
+  elevationBlendWeight: 1
+  elevationGridResolution: 250
+  elevationSmoothingSigma: 0
+  elevationSearchRadius: 18
+  elevationDataMaxHeight: 450
+  densityFalloffRadius: 0
+  seaLevelOverride: 0
+  seaBlackThreshold: 0.001
+  seaTransitionWidth: 0.01
+  streetYOffset: 0.1
+  primaryStreetWidth: 5
+  secondaryStreetWidth: 3.5
+  residentialStreetWidth: 2.5
+  footwayWidth: 1.2
+  defaultStreetWidth: 2
+  stepsWidth: 1
+  buildingPlacementMode: 2
+  usePrefabMaterials: 1
+  foundationTopOffset: 0.4
+  defaultBuildingHeight: 5
+  poiBuildingHeight: 5
+  buildingYOffset: 0
+  defaultBuildingColor: {r: 0.75, g: 0.72, b: 0.68, a: 1}
+  poiBuildingColor: {r: 1, g: 0.45, b: 0.15, a: 1}
+  primaryStreetColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+  secondaryStreetColor: {r: 0.45, g: 0.45, b: 0.42, a: 1}
+  footpathColor: {r: 0.6, g: 0.55, b: 0.5, a: 1}

@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: ba83799266337cb42ac6a1e8adfa1d5a
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures: []
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 340990
+  packageName: Lakefell - Stylized Fantasy Village
+  packageVersion: 1.0
+  assetPath: Assets/Raygeas/Shared Assets/Shaders/URP/Water_URP.shader
+  uploadId: 820804

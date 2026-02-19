@@ -9,11 +9,11 @@ EditorBuildSettings:
     path: Assets/Scenes/SampleScene.unity
     guid: 99c9720ab356a0642a771bea13969a05
   - enabled: 0
-    path: Assets/Malbers Animations/Animals Packs/04 Pets/Cat/_Cat AC/1 - Demos Re/2
-      - Cat Mobile.unity
+    path: Assets/Packages/Malbers Animations/Animals Packs/04 Pets/Cat/_Cat AC/1
+      - Demos Re/2 - Cat Mobile.unity
     guid: 15529e87d94dfb44b81aa86f10b0900e
   - enabled: 1
-    path: Assets/Idyllic Italian Coast Town/Scenes/Demo Italy.unity
+    path: Assets/Packages/Idyllic Italian Coast Town/Scenes/Demo Italy.unity
     guid: 0fd98f6645728184ca5442d1e2f0eca8
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
