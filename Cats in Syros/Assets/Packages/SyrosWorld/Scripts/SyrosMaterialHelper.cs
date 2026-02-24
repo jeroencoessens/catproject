@@ -102,21 +102,34 @@ namespace SyrosWorld
         /// <summary>
         /// Get a pipeline-appropriate terrain material, or <c>null</c> if
         /// no suitable shader is available.
+        ///
+        /// Prefers the custom <c>Custom/GreekIslandTerrainV2</c> shader (based on
+        /// URP Lit structure, world-space tiling, no custom terrain instancing).
+        /// Falls back to the default pipeline terrain shader if unavailable.
         /// </summary>
         public static Material GetTerrainMaterial()
         {
-            // 1. Ask the active pipeline
+            // 1. Prefer the V2 terrain shader (Lit-based, proven to work on terrain)
+            var customShader = Shader.Find("Custom/GreekIslandTerrainV2");
+            if (customShader != null)
+            {
+                Debug.Log("[SyrosMaterialHelper] Using Custom/GreekIslandTerrainV2 shader. " +
+                          "Assign a texture to _BaseMap in the Terrain Inspector.");
+                return new Material(customShader);
+            }
+
+            // 2. Ask the active pipeline
             if (GraphicsSettings.currentRenderPipeline != null)
             {
                 var terrainMat = GraphicsSettings.currentRenderPipeline.defaultTerrainMaterial;
                 if (terrainMat != null) return terrainMat;
             }
 
-            // 2. URP terrain shader
+            // 3. URP terrain shader
             var shader = Shader.Find("Universal Render Pipeline/Terrain/Lit");
             if (shader != null) return new Material(shader);
 
-            // 3. Built-in terrain shader
+            // 4. Built-in terrain shader
             shader = Shader.Find("Nature/Terrain/Standard");
             if (shader != null) return new Material(shader);
 

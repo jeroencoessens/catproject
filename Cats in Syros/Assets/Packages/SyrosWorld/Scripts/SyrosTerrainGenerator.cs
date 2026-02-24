@@ -140,6 +140,11 @@ namespace SyrosWorld
             float seaThreshold  = config.seaBlackThreshold;
             float seaTransition = config.seaTransitionWidth;
 
+            // Minimum-height floor (normalised to [0,1] terrain space)
+            float minHeightNorm = (config.minimumHeight > 0f && config.terrainMaxHeight > 0f)
+                ? Mathf.Clamp01(config.minimumHeight / config.terrainMaxHeight)
+                : 0f;
+
             for (int y = 0; y < res; y++)
             {
                 float worldNormY = (float)y / (res - 1);
@@ -154,21 +159,29 @@ namespace SyrosWorld
                     // Sample the heightmap in geo space → [0,1]
                     float hMap = converter.SampleHeightmap(heightmap, geoNorm.x, geoNorm.y);
 
+                    // ── Elevation Only (debug) ───────────────────────
+                    // When active the heightmap is COMPLETELY ignored —
+                    // no sea override, no blending — purely elevation grid.
+                    if (elevOnly)
+                    {
+                        heights[y, x] = (elevGrid != null)
+                            ? SampleGrid(elevGrid, worldNormX, worldNormY)
+                            : 0f;
+                    }
                     // ── Sea-level override check ────────────────────────
                     // If the raw heightmap pixel is at or below the black
-                    // threshold, this is sea — skip all blending and force
+                    // threshold, this is sea — skip blending and force
                     // height toward 0 with a smooth transition.
-                    if (seaOverride && hMap <= seaThreshold)
+                    else if (seaOverride && hMap <= seaThreshold)
                     {
                         heights[y, x] = 0f;
                     }
                     else if (seaOverride && seaTransition > 0f && hMap < seaThreshold + seaTransition)
                     {
-                        // Transition band: lerp blended height toward 0 at the coast
-                        float t = (hMap - seaThreshold) / seaTransition; // 0 at shore, 1 at full land
+                        float t = (hMap - seaThreshold) / seaTransition;
                         float blended = ComputeBlendedHeight(
                             hMap, worldNormX, worldNormY,
-                            elevOnly, densityBlend, hasElevData,
+                            densityBlend, hasElevData,
                             elevGrid, elevWeight, config);
                         heights[y, x] = blended * t;
                     }
@@ -177,9 +190,15 @@ namespace SyrosWorld
                         // ── Normal blend modes ──────────────────────────
                         heights[y, x] = ComputeBlendedHeight(
                             hMap, worldNormX, worldNormY,
-                            elevOnly, densityBlend, hasElevData,
+                            densityBlend, hasElevData,
                             elevGrid, elevWeight, config);
                     }
+
+                    // ── Minimum-height floor ─────────────────────────
+                    // Clamp after all blending / sea-override so nothing
+                    // drops below the configured sea-level altitude.
+                    if (minHeightNorm > 0f && heights[y, x] < minHeightNorm)
+                        heights[y, x] = minHeightNorm;
                 }
 
                 // Progress bar (editor only)
@@ -229,14 +248,11 @@ namespace SyrosWorld
         static float ComputeBlendedHeight(
             float hMap,
             float worldNormX, float worldNormY,
-            bool elevOnly, bool densityBlend, bool hasElevData,
+            bool densityBlend, bool hasElevData,
             float[,] elevGrid, float[,] elevWeight,
             SyrosWorldConfig config)
         {
-            if (elevOnly && elevGrid != null)
-            {
-                return SampleGrid(elevGrid, worldNormX, worldNormY);
-            }
+            // elevOnly is handled upstream — never reaches here.
             if (densityBlend && elevGrid != null)
             {
                 float hElev = SampleGrid(elevGrid,   worldNormX, worldNormY);

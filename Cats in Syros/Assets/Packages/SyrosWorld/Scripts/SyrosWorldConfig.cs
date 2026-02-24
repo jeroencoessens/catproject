@@ -213,11 +213,41 @@ namespace SyrosWorld
         [Range(0f, 0.1f)]
         public float seaTransitionWidth = 0.01f;
 
-        // ── Transient flags ─────────────────────────────────────────────
-        // Set by SyrosWorldBuilder before each generation run.
-        // Not serialised — they mirror the builder's per-run toggle state.
-        [System.NonSerialized] public bool elevationOnlyDebug;
-        [System.NonSerialized] public bool useDensityBasedBlending = true;
+        // =====================================================================
+        //  MINIMUM HEIGHT (SEA-LEVEL FLOOR)
+        //  When > 0, every terrain pixel is clamped to at least this altitude
+        //  (in metres).  Buildings inherit the clamp automatically because
+        //  they sample terrain height.  Set to 0 to disable.
+        // =====================================================================
+
+        [Header("Minimum Height")]
+
+        [Tooltip("Global height floor in metres.  Every terrain pixel will be " +
+                 "at least this high.  Set to 0 to disable.\n\n" +
+                 "Use this to define a sea level — everything below this " +
+                 "altitude gets raised to it.  Buildings follow automatically.")]
+        [Min(0f)]
+        public float minimumHeight = 0f;
+
+        // =====================================================================
+        //  ELEVATION BLEND MODE
+        //  These two toggles select which of the three blend modes is active.
+        //  They are serialised on the config so there is a single source of
+        //  truth (no duplicate on SyrosWorldBuilder).
+        // =====================================================================
+
+        [Header("Elevation Blend Mode")]
+
+        [Tooltip("DEBUG: Ignore the heightmap completely and build terrain " +
+                 "from JSON elevation data only.  Sea override and all heightmap-" +
+                 "based logic are bypassed.  Useful for verifying POI elevations.")]
+        public bool elevationOnlyDebug = false;
+
+        [Tooltip("ON = smart blend: elevation data dominates where dense, " +
+                 "heightmap fills in where sparse.\n" +
+                 "OFF = uniform blend controlled by Blend Weight.\n\n" +
+                 "Ignored when Elevation Only Debug is active.")]
+        public bool useDensityBasedBlending = true;
 
         // =====================================================================
         //  STREETS

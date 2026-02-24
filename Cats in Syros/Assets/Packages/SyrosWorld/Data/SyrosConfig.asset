@@ -28,7 +28,7 @@ MonoBehaviour:
   minDensityFloor: 0.05
   smoothingSigma: 5
   densityExponent: 1.2
-  terrainResolution: 1025
+  terrainResolution: 2049
   elevationBlendWeight: 1
   elevationGridResolution: 250
   elevationSmoothingSigma: 0
@@ -38,12 +38,15 @@ MonoBehaviour:
   seaLevelOverride: 0
   seaBlackThreshold: 0.001
   seaTransitionWidth: 0.01
+  minimumHeight: 25
+  elevationOnlyDebug: 0
+  useDensityBasedBlending: 1
   streetYOffset: 0.1
-  primaryStreetWidth: 5
-  secondaryStreetWidth: 3.5
-  residentialStreetWidth: 2.5
-  footwayWidth: 1.2
-  defaultStreetWidth: 2
+  primaryStreetWidth: 4
+  secondaryStreetWidth: 2.5
+  residentialStreetWidth: 2
+  footwayWidth: 1
+  defaultStreetWidth: 1.5
   stepsWidth: 1
   buildingPlacementMode: 2
   usePrefabMaterials: 1

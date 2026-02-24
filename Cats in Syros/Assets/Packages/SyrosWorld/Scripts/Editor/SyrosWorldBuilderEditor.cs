@@ -303,35 +303,36 @@ namespace SyrosWorld.Editor
 
                 // ── Mode toggles ─────────────────────────────────────
                 EditorGUILayout.Space(2);
-                builder.elevationOnlyDebug = EditorGUILayout.Toggle(
+                builder.config.elevationOnlyDebug = EditorGUILayout.Toggle(
                     new GUIContent("Elevation Only (Debug)",
-                        "Ignore the heightmap completely. Terrain is built purely from JSON " +
-                        "elevation data. Useful for verifying POI elevations."),
-                    builder.elevationOnlyDebug);
+                        "Ignore the heightmap completely — no sea override, no " +
+                        "blending. Terrain is built purely from JSON elevation data. " +
+                        "Useful for verifying POI elevations."),
+                    builder.config.elevationOnlyDebug);
 
-                using (new EditorGUI.DisabledScope(builder.elevationOnlyDebug))
+                using (new EditorGUI.DisabledScope(builder.config.elevationOnlyDebug))
                 {
-                    builder.useDensityBasedBlending = EditorGUILayout.Toggle(
+                    builder.config.useDensityBasedBlending = EditorGUILayout.Toggle(
                         new GUIContent("Density-Based Blend",
                             "Where elevation data is dense the heightmap is suppressed; " +
                             "where there are gaps the heightmap fills in. " +
                             "When OFF a uniform Blend Weight is used."),
-                        builder.useDensityBasedBlending);
+                        builder.config.useDensityBasedBlending);
                 }
 
-                if (builder.elevationOnlyDebug)
+                if (builder.config.elevationOnlyDebug)
                 {
                     EditorGUILayout.HelpBox(
-                        "DEBUG MODE: The heightmap is completely ignored. " +
-                        "Terrain is generated from JSON elevation data only. " +
-                        "POI Y positions should now match their expected elevations.",
+                        "DEBUG MODE: The heightmap is completely ignored — " +
+                        "sea override and all heightmap-based logic are bypassed. " +
+                        "Terrain is generated from JSON elevation data only.",
                         MessageType.Warning);
                 }
 
                 EditorGUILayout.Space(4);
 
                 // ── Contextual sub-controls ──────────────────────────
-                if (!builder.elevationOnlyDebug && builder.useDensityBasedBlending)
+                if (!builder.config.elevationOnlyDebug && builder.config.useDensityBasedBlending)
                 {
                     builder.config.densityFalloffRadius = EditorGUILayout.IntSlider(
                         new GUIContent("Density Falloff Radius",
@@ -340,7 +341,7 @@ namespace SyrosWorld.Editor
                         builder.config.densityFalloffRadius, 0, 64);
                 }
 
-                if (!builder.elevationOnlyDebug && !builder.useDensityBasedBlending)
+                if (!builder.config.elevationOnlyDebug && !builder.config.useDensityBasedBlending)
                 {
                     builder.config.elevationBlendWeight = EditorGUILayout.Slider(
                         new GUIContent("Blend Weight",
@@ -408,6 +409,30 @@ namespace SyrosWorld.Editor
                             "Height range above the threshold where terrain fades to 0. " +
                             "Prevents hard cliffs at the coastline."),
                         builder.config.seaTransitionWidth, 0f, 0.1f);
+                }
+
+                // ── Minimum height (sea-level floor) ─────────────────
+                EditorGUILayout.Space(4);
+                EditorGUILayout.LabelField("Minimum Height", EditorStyles.miniLabel);
+
+                builder.config.minimumHeight = EditorGUILayout.FloatField(
+                    new GUIContent("Min Height (m)",
+                        "Global height floor in metres. Every terrain point will " +
+                        "be at least this high. Set to 0 to disable.\n\n" +
+                        "Buildings inherit clamping automatically."),
+                    builder.config.minimumHeight);
+
+                // Prevent negative values in the field
+                if (builder.config.minimumHeight < 0f)
+                    builder.config.minimumHeight = 0f;
+
+                if (builder.config.minimumHeight > 0f)
+                {
+                    float normMin = builder.config.minimumHeight / Mathf.Max(builder.config.terrainMaxHeight, 1f);
+                    EditorGUILayout.HelpBox(
+                        $"Floor = {builder.config.minimumHeight:F1}m  →  " +
+                        $"normalised {normMin:F4} of terrain max ({builder.config.terrainMaxHeight:F0}m).",
+                        normMin > 0.5f ? MessageType.Warning : MessageType.Info);
                 }
 
                 if (EditorGUI.EndChangeCheck())

@@ -1,0 +1,136 @@
+// =============================================================================
+// ContactGrassScatter.compute
+//
+// Reads the contact mask and terrain heightmap to scatter grass instances.
+//
+// Kernel 0 (Clear): resets the instance counter to 0.
+// Kernel 1 (Scatter): for each potential grass slot, samples the contact mask
+//   and probabilistically emits a grass instance at that world position.
+//
+// Output: an AppendStructuredBuffer of GrassInstance structs consumed by
+//   DrawMeshInstancedIndirect on the CPU side.
+// =============================================================================
+
+#pragma kernel Clear
+#pragma kernel Scatter
+
+struct GrassInstance
+{
+    float3 position;  // world-space base position
+    float  rotation;  // Y-axis rotation in radians
+    float2 scale;     // width, height
+    float  colorVar;  // 0-1 colour variation seed
+    float  _pad;
+};
+
+// ── Buffers ────────────────────────────────────────────────────────────
+RWStructuredBuffer<GrassInstance> _GrassBuffer;
+RWStructuredBuffer<uint>         _CounterBuffer; // [0] = count, used as indirect args
+
+// ── Textures ───────────────────────────────────────────────────────────
+Texture2D<float>  _ContactMask;
+Texture2D<float>  _HeightMap;
+SamplerState      sampler_ContactMask;
+SamplerState      sampler_HeightMap;
+
+// ── Parameters ─────────────────────────────────────────────────────────
+float4 _TerrainOrigin;  // (x, y, z, unused) — terrain transform.position
+float4 _TerrainSize;    // (sizeX, sizeY, sizeZ, unused)
+float  _MaskThreshold;  // 0.05 – only spawn where mask > this
+float  _Density;        // probability of spawning at each slot
+float  _BaseWidth;
+float  _BaseHeight;
+float  _WidthVariation; // ±fraction of BaseWidth
+float  _HeightVariation;// ±fraction of BaseHeight
+uint   _MaxInstances;
+uint   _GridWidth;      // number of sample columns
+uint   _GridHeight;     // number of sample rows
+float  _Seed;           // random seed offset per bake
+
+// ── Hash function ──────────────────────────────────────────────────────
+float hash(float2 p)
+{
+    float3 p3 = frac(float3(p.xyx) * 0.1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return frac((p3.x + p3.y) * p3.z);
+}
+
+float hash2(float2 p)
+{
+    return hash(p + float2(127.1, 311.7));
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  KERNEL 0: Clear
+// ════════════════════════════════════════════════════════════════════════
+[numthreads(1, 1, 1)]
+void Clear(uint3 id : SV_DispatchThreadID)
+{
+    _CounterBuffer[0] = 0;
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  KERNEL 1: Scatter
+// ════════════════════════════════════════════════════════════════════════
+[numthreads(8, 8, 1)]
+void Scatter(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _GridWidth || id.y >= _GridHeight)
+        return;
+
+    // Normalised grid position [0..1]
+    float2 uv = float2(
+        ((float)id.x + 0.5) / (float)_GridWidth,
+        ((float)id.y + 0.5) / (float)_GridHeight
+    );
+
+    // Hash for randomisation, seeded by grid position + _Seed
+    float2 hashInput = float2(id.x + _Seed, id.y + _Seed * 1.37);
+    float  rng = hash(hashInput);
+
+    // Sample contact mask
+    float maskVal = _ContactMask.SampleLevel(sampler_ContactMask, uv, 0);
+
+    // Only spawn where mask is above threshold and density roll passes
+    if (maskVal < _MaskThreshold)
+        return;
+
+    // Scale probability by mask intensity (stronger contact = more grass)
+    float spawnChance = _Density * saturate(maskVal);
+    if (rng > spawnChance)
+        return;
+
+    // World position with slight jitter
+    float2 jitter = float2(
+        hash(hashInput + float2(13.7, 0)) - 0.5,
+        hash(hashInput + float2(0, 17.3)) - 0.5
+    ) * (_TerrainSize.x / (float)_GridWidth) * 0.8;
+
+    float worldX = _TerrainOrigin.x + uv.x * _TerrainSize.x + jitter.x;
+    float worldZ = _TerrainOrigin.z + uv.y * _TerrainSize.z + jitter.y;
+
+    // Sample heightmap to get Y
+    // Re-compute UV after jitter for height
+    float2 heightUV = float2(
+        (worldX - _TerrainOrigin.x) / _TerrainSize.x,
+        (worldZ - _TerrainOrigin.z) / _TerrainSize.z
+    );
+    heightUV = saturate(heightUV);
+    float heightNorm = _HeightMap.SampleLevel(sampler_HeightMap, heightUV, 0);
+    float worldY = _TerrainOrigin.y + heightNorm * _TerrainSize.y;
+
+    // Build instance
+    GrassInstance inst;
+    inst.position = float3(worldX, worldY, worldZ);
+    inst.rotation = hash2(hashInput) * 6.2831853; // 0..2π
+    inst.scale.x  = _BaseWidth  * (1.0 + (_WidthVariation  * (hash(hashInput + float2(3.1, 7.7)) * 2.0 - 1.0)));
+    inst.scale.y  = _BaseHeight * (1.0 + (_HeightVariation  * (hash(hashInput + float2(9.2, 1.3)) * 2.0 - 1.0)));
+    inst.colorVar = hash(hashInput + float2(5.5, 5.5));
+    inst._pad = 0;
+
+    // Append (atomic)
+    uint idx;
+    InterlockedAdd(_CounterBuffer[0], 1, idx);
+    if (idx < _MaxInstances)
+        _GrassBuffer[idx] = inst;
+}

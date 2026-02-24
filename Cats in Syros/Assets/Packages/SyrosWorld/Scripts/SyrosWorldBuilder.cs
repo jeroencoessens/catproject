@@ -74,14 +74,6 @@ namespace SyrosWorld
                  "OFF = use heightmap only.")]
         public bool useElevationBlending = true;
 
-        [Tooltip("DEBUG: Ignore the heightmap completely and build terrain from " +
-                 "JSON elevation data only.  Useful to verify elevation values.")]
-        public bool elevationOnlyDebug = false;
-
-        [Tooltip("ON = smart blend: use elevation data where dense, heightmap where sparse.\n" +
-                 "OFF = uniform blend controlled by Blend Weight.")]
-        public bool useDensityBasedBlending = true;
-
         // =================================================================
         //  RUNTIME REFERENCES (read-only in Inspector)
         // =================================================================
@@ -148,16 +140,12 @@ namespace SyrosWorld
 
                 // Collect elevation data from JSON when any elevation mode is active
                 List<ElevationPoint> elevPts = null;
-                if (useElevationBlending || elevationOnlyDebug)
+                if (useElevationBlending || config.elevationOnlyDebug)
                 {
                     elevPts = _mapData.GetElevationPoints();
                     Debug.Log($"[SyrosWorldBuilder]   Collected {elevPts.Count} " +
                               "elevation points for terrain blending.");
                 }
-
-                // Push per-run mode flags into config (transient, not serialised)
-                config.elevationOnlyDebug        = elevationOnlyDebug;
-                config.useDensityBasedBlending    = useDensityBasedBlending;
 
                 SyrosTerrainGenerator.GenerateTerrain(
                     _generatedTerrain, heightmapTexture, _converter, config, elevPts);
@@ -254,11 +242,8 @@ namespace SyrosWorld
                 _generatedTerrain = SyrosTerrainGenerator.CreateTerrainObject(transform);
 
             List<ElevationPoint> elevPts = null;
-            if (useElevationBlending || elevationOnlyDebug)
+            if (useElevationBlending || config.elevationOnlyDebug)
                 elevPts = _mapData.GetElevationPoints();
-
-            config.elevationOnlyDebug     = elevationOnlyDebug;
-            config.useDensityBasedBlending = useDensityBasedBlending;
 
             SyrosTerrainGenerator.GenerateTerrain(
                 _generatedTerrain, heightmapTexture, _converter, config, elevPts);
