@@ -4,7 +4,8 @@
 // URP-compatible alpha-cutout grass billboard shader.
 // Receives per-instance data from a StructuredBuffer (DrawMeshInstancedIndirect).
 //
-// Each quad is a simple camera-facing billboard anchored at the base.
+// Each grass tuft uses a 3-quad cross mesh (star pattern at 0°/60°/120°)
+// anchored at the base, providing volume from any viewing angle.
 // Wind animation via vertex displacement. Colour variation per instance.
 // =============================================================================
 
@@ -19,6 +20,7 @@ Shader "Hidden/ContactGrassRender"
         _WindSpeed ("Wind Speed", Float) = 1.5
         _WindStrength ("Wind Strength", Float) = 0.15
         _ColorVariation ("Color Variation", Range(0,1)) = 0.15
+        _UniformScale ("Uniform Scale", Float) = 1.0
     }
 
     SubShader
@@ -54,10 +56,11 @@ Shader "Hidden/ContactGrassRender"
                 float  rotation;
                 float2 scale;
                 float  colorVar;
-                float  _pad;
+                float  fade;      // distance fade from cull kernel
             };
 
-            StructuredBuffer<GrassInstance> _GrassBuffer;
+            // Reads from the culled/visible buffer (rebuilt every frame)
+            StructuredBuffer<GrassInstance> _VisibleBuffer;
 
             TEXTURE2D(_MainTex);
             SAMPLER(sampler_MainTex);
@@ -70,6 +73,7 @@ Shader "Hidden/ContactGrassRender"
                 float  _WindSpeed;
                 float  _WindStrength;
                 half   _ColorVariation;
+                float  _UniformScale;
             CBUFFER_END
 
             struct Attributes
@@ -85,21 +89,27 @@ Shader "Hidden/ContactGrassRender"
                 float  fogCoord: TEXCOORD1;
                 half   colorVar: TEXCOORD2;
                 float3 worldPos: TEXCOORD3;
+                half   fade    : TEXCOORD4;
             };
 
             Varyings vert(Attributes IN, uint instanceID : SV_InstanceID)
             {
                 Varyings OUT;
 
-                GrassInstance gi = _GrassBuffer[instanceID];
+                GrassInstance gi = _VisibleBuffer[instanceID];
 
-                // Billboard local offsets (quad mesh expected: -0.5..0.5 XY)
+                // Apply uniform scale on top of per-instance size
+                float w = gi.scale.x * _UniformScale;
+                float h = gi.scale.y * _UniformScale;
+
+                // Billboard local offsets — scale X and Z by width (cross mesh has depth)
                 float3 localPos = IN.posOS.xyz;
-                localPos.x *= gi.scale.x;
-                localPos.y *= gi.scale.y;
+                localPos.x *= w;
+                localPos.z *= w;
+                localPos.y *= h;
 
                 // Anchor at base: shift up so bottom of quad sits at origin
-                localPos.y += gi.scale.y * 0.5;
+                localPos.y += h * 0.5;
 
                 // Rotate around Y axis
                 float s, c;
@@ -119,11 +129,15 @@ Shader "Hidden/ContactGrassRender"
                 worldPos.x += windAmount * heightFactor;
                 worldPos.z += windAmount * 0.5 * heightFactor;
 
+                // Scale down with distance fade (shrink into ground)
+                worldPos.y = gi.position.y + (worldPos.y - gi.position.y) * gi.fade;
+
                 OUT.posCS = TransformWorldToHClip(worldPos);
                 OUT.uv = TRANSFORM_TEX(IN.uv, _MainTex);
                 OUT.fogCoord = ComputeFogFactor(OUT.posCS.z);
                 OUT.colorVar = gi.colorVar;
                 OUT.worldPos = worldPos;
+                OUT.fade = gi.fade;
 
                 return OUT;
             }
@@ -131,7 +145,9 @@ Shader "Hidden/ContactGrassRender"
             half4 frag(Varyings IN) : SV_Target
             {
                 half4 tex = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, IN.uv);
-                clip(tex.a - _Cutoff);
+                // Increase cutoff as fade decreases for smoother dissolve
+                half fadedCutoff = _Cutoff + (1.0 - IN.fade) * 0.5;
+                clip(tex.a - fadedCutoff);
 
                 // Gradient color from base to tip
                 float heightGrad = saturate(IN.uv.y);
@@ -159,6 +175,11 @@ Shader "Hidden/ContactGrassRender"
         }
 
         // ── Shadow caster pass ───────────────────────────────────────
+        // NOTE: GrassInstance struct and CBUFFER are duplicated below.
+        // This is required for SRP Batcher compatibility — each HLSL
+        // program must declare its own identical CBUFFER block.
+        // Vertex transform (including wind + fade) is also duplicated
+        // so that shadow positions match the lit forward pass.
         Pass
         {
             Name "ShadowCaster"
@@ -182,10 +203,10 @@ Shader "Hidden/ContactGrassRender"
                 float  rotation;
                 float2 scale;
                 float  colorVar;
-                float  _pad;
+                float  fade;
             };
 
-            StructuredBuffer<GrassInstance> _GrassBuffer;
+            StructuredBuffer<GrassInstance> _VisibleBuffer;
 
             TEXTURE2D(_MainTex);
             SAMPLER(sampler_MainTex);
@@ -198,6 +219,7 @@ Shader "Hidden/ContactGrassRender"
                 float  _WindSpeed;
                 float  _WindStrength;
                 half   _ColorVariation;
+                float  _UniformScale;
             CBUFFER_END
 
             struct Attributes
@@ -215,12 +237,16 @@ Shader "Hidden/ContactGrassRender"
             Varyings vertShadow(Attributes IN, uint instanceID : SV_InstanceID)
             {
                 Varyings OUT;
-                GrassInstance gi = _GrassBuffer[instanceID];
+                GrassInstance gi = _VisibleBuffer[instanceID];
+
+                float w = gi.scale.x * _UniformScale;
+                float h = gi.scale.y * _UniformScale;
 
                 float3 localPos = IN.posOS.xyz;
-                localPos.x *= gi.scale.x;
-                localPos.y *= gi.scale.y;
-                localPos.y += gi.scale.y * 0.5;
+                localPos.x *= w;
+                localPos.z *= w;
+                localPos.y *= h;
+                localPos.y += h * 0.5;
 
                 float s, c;
                 sincos(gi.rotation, s, c);
@@ -230,6 +256,17 @@ Shader "Hidden/ContactGrassRender"
                 rotated.y = localPos.y;
 
                 float3 worldPos = gi.position + rotated;
+
+                // Wind — must match forward pass so shadows align with lit grass
+                float windPhase = _Time.y * _WindSpeed + gi.position.x * 0.3 + gi.position.z * 0.2;
+                float windAmount = sin(windPhase) * _WindStrength;
+                float heightFactor = saturate(IN.posOS.y + 0.5);
+                worldPos.x += windAmount * heightFactor;
+                worldPos.z += windAmount * 0.5 * heightFactor;
+
+                // Distance fade — shrink into ground to match forward pass
+                worldPos.y = gi.position.y + (worldPos.y - gi.position.y) * gi.fade;
+
                 OUT.posCS = TransformWorldToHClip(worldPos);
                 OUT.uv = TRANSFORM_TEX(IN.uv, _MainTex);
                 return OUT;

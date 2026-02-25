@@ -34,6 +34,15 @@
                     "initialStateCheck": false
                 },
                 {
+                    "name": "ZoomHold",
+                    "type": "Button",
+                    "id": "69138c20-ddd6-4f57-85ee-474dad9bce24",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "SprintToggle",
                     "type": "Button",
                     "id": "2d74d93c-1ae7-436e-a4ac-fbb642fd14c2",
@@ -270,6 +279,28 @@
                     "processors": "",
                     "groups": "Keyboard and Mouse",
                     "action": "Sprint",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "efd264e6-d470-4712-b695-af65443faf76",
+                    "path": "<Gamepad>/leftShoulder",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Gamepad",
+                    "action": "ZoomHold",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "39d7ce90-140a-4dc4-8370-91984955fb21",
+                    "path": "<Keyboard>/#(O)",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard and Mouse",
+                    "action": "ZoomHold",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },

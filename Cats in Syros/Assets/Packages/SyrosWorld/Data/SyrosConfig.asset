@@ -48,7 +48,7 @@ MonoBehaviour:
   footwayWidth: 1
   defaultStreetWidth: 1.5
   stepsWidth: 1
-  buildingPlacementMode: 2
+  buildingPlacementMode: 1
   usePrefabMaterials: 1
   foundationTopOffset: 0.4
   defaultBuildingHeight: 5

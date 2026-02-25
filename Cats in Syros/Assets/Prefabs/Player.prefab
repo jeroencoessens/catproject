@@ -289,6 +289,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Kitten
       objectReference: {fileID: 0}
+    - target: {fileID: 8058451102102436584, guid: 083ae78fbd043dc48858a8f35bca05f7, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8355495406262069249, guid: 083ae78fbd043dc48858a8f35bca05f7, type: 3}
       propertyPath: 'm_Materials.Array.data[1]'
       value: 
@@ -495,20 +499,40 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4703760501631910946, guid: b96e635735c78654192eeb49782c33d4, type: 3}
+      propertyPath: debugModes
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4703760501631910946, guid: b96e635735c78654192eeb49782c33d4, type: 3}
+      propertyPath: debugStates
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4703760501631910946, guid: b96e635735c78654192eeb49782c33d4, type: 3}
       propertyPath: Editor_Tabs1
-      value: 4
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4703760501631910946, guid: b96e635735c78654192eeb49782c33d4, type: 3}
       propertyPath: Editor_Tabs2
-      value: 1
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 4703760501631910946, guid: b96e635735c78654192eeb49782c33d4, type: 3}
       propertyPath: SelectedMode
       value: 2
       objectReference: {fileID: 0}
+    - target: {fileID: 4703760501631910946, guid: b96e635735c78654192eeb49782c33d4, type: 3}
+      propertyPath: debugStances
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4703760501631910946, guid: b96e635735c78654192eeb49782c33d4, type: 3}
+      propertyPath: Runtime_Tabs1
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4703760501631910946, guid: b96e635735c78654192eeb49782c33d4, type: 3}
+      propertyPath: Editor_EventTabs
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
       propertyPath: m_MapButtons.Array.data[0].buttons.Array.size
-      value: 22
+      value: 23
       objectReference: {fileID: 0}
     - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
       propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[1].name
@@ -595,6 +619,10 @@ PrefabInstance:
       value: Inventory
       objectReference: {fileID: 0}
     - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
+      propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[22].name
+      value: Zoom
+      objectReference: {fileID: 0}
+    - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
       propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[1].reference
       value: 
       objectReference: {fileID: 3802677455511576523, guid: d65337a759dd2234caf37eb0e7c27d9e, type: 3}
@@ -679,6 +707,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 3539869255257827253, guid: d65337a759dd2234caf37eb0e7c27d9e, type: 3}
     - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
+      propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[22].reference
+      value: 
+      objectReference: {fileID: -2417022453908594963, guid: d65337a759dd2234caf37eb0e7c27d9e, type: 3}
+    - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
       propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[0].interaction
       value: 0
       objectReference: {fileID: 0}
@@ -743,6 +775,10 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
+      propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[22].active.UseConstant
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
       propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[0].active.ConstantValue
       value: 1
       objectReference: {fileID: 0}
@@ -783,6 +819,10 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
+      propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[22].active.ConstantValue
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
       propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[15].Vector2Mult.UseConstant
       value: 1
       objectReference: {fileID: 0}
@@ -808,6 +848,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
       propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[21].Vector2Mult.UseConstant
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
+      propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[22].Vector2Mult.UseConstant
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
@@ -951,6 +995,26 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
+      propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[22].DoubleTapTime.UseConstant
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
+      propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[22].InputUpFailed.UseConstant
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
+      propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[22].LongPressTime.UseConstant
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
+      propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[22].Vector2Mult.ConstantValue
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
+      propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[22].ignoreOnPause.UseConstant
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
       propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[15].LongPressDelay.UseConstant
       value: 1
       objectReference: {fileID: 0}
@@ -1032,6 +1096,18 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
       propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[21].ResetOnDisable.UseConstant
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
+      propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[22].LongPressDelay.UseConstant
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
+      propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[22].PressThreshold.UseConstant
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
+      propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[22].ResetOnDisable.UseConstant
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
@@ -1119,6 +1195,18 @@ PrefabInstance:
       value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
+      propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[22].DoubleTapTime.ConstantValue
+      value: 0.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
+      propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[22].InputUpFailed.ConstantValue
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
+      propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[22].LongPressTime.ConstantValue
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
       propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[15].PressThreshold.ConstantValue
       value: 0.5
       objectReference: {fileID: 0}
@@ -1175,6 +1263,14 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
+      propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[22].PressThreshold.ConstantValue
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
+      propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[22].ResetOnDisable.ConstantValue
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
       propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[1].OnInputDown.m_PersistentCalls.m_Calls.Array.size
       value: 0
       objectReference: {fileID: 0}
@@ -1223,6 +1319,10 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
+      propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[22].OnInputChanged.m_PersistentCalls.m_Calls.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
       propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[7].OnInputDown.m_PersistentCalls.m_Calls.Array.data[3].m_Mode
       value: 1
       objectReference: {fileID: 0}
@@ -1258,6 +1358,10 @@ PrefabInstance:
       propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[15].OnInputDown.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 3772207358613446793}
+    - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
+      propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[22].OnInputChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
       propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[1].OnInputChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
@@ -1302,6 +1406,10 @@ PrefabInstance:
       propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[1].OnInputDown.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
       value: SpeedDown
       objectReference: {fileID: 0}
+    - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
+      propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[22].OnInputChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 2065521016422841891}
     - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
       propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[7].OnInputDown.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
       value: Zone_Activate
@@ -1355,12 +1463,20 @@ PrefabInstance:
       value: set_Sprint
       objectReference: {fileID: 0}
     - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
+      propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[22].OnInputChanged.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
       propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[13].OnInputChanged.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
       value: set_Strafe
       objectReference: {fileID: 0}
     - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
       propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[15].OnInputChanged.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
       value: set_Strafe
+      objectReference: {fileID: 0}
+    - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
+      propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[22].OnInputChanged.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: ChangeZoom
       objectReference: {fileID: 0}
     - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
       propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[1].OnInputDown.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
@@ -1407,11 +1523,19 @@ PrefabInstance:
       value: MalbersAnimations.Controller.MAnimal, MalbersAnimations
       objectReference: {fileID: 0}
     - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
+      propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[22].OnInputChanged.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: SimpleCharacterZoom, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
       propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[7].OnInputDown.m_PersistentCalls.m_Calls.Array.data[3].m_Arguments.m_ObjectArgumentAssemblyTypeName
       value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
     - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
       propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[1].OnInputChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
+      objectReference: {fileID: 0}
+    - target: {fileID: 5306532659590383703, guid: b96e635735c78654192eeb49782c33d4, type: 3}
+      propertyPath: m_MapButtons.Array.data[0].buttons.Array.data[22].OnInputChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
       value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
     - target: {fileID: 5898002821936919821, guid: b96e635735c78654192eeb49782c33d4, type: 3}
@@ -1466,6 +1590,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 4181316820409248116, guid: b96e635735c78654192eeb49782c33d4, type: 3}
       insertIndex: -1
       addedObject: {fileID: 86095847965987177}
+    - targetCorrespondingSourceObject: {fileID: 4181316820409248116, guid: b96e635735c78654192eeb49782c33d4, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2065521016422841891}
     - targetCorrespondingSourceObject: {fileID: 5506209157976459382, guid: b96e635735c78654192eeb49782c33d4, type: 3}
       insertIndex: 2
       addedObject: {fileID: 976271623207680342}
@@ -1602,6 +1729,23 @@ NavMeshObstacle:
   m_CarveOnlyStationary: 1
   m_Center: {x: 0, y: 0.11, z: 0.12}
   m_TimeToStationary: 0.5
+--- !u!114 &2065521016422841891
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5699739244165565919}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c46877e60a4e4411913ec6774805992, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SimpleCharacterZoom
+  camera: {fileID: 0}
+  sprintCamera: {fileID: 0}
+  zoomedIn: 0
+  zoomedInFOV: 20
+  zoomedOutFOV: 30
 --- !u!137 &7262639042575439419 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 1284823732348252816, guid: b96e635735c78654192eeb49782c33d4, type: 3}

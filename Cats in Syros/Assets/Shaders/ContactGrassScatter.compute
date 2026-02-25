@@ -1,18 +1,25 @@
 // =============================================================================
 // ContactGrassScatter.compute
 //
-// Reads the contact mask and terrain heightmap to scatter grass instances.
+// Reads the contact mask and terrain heightmap to scatter grass instances,
+// then culls per-frame against camera frustum + distance.
 //
-// Kernel 0 (Clear): resets the instance counter to 0.
-// Kernel 1 (Scatter): for each potential grass slot, samples the contact mask
-//   and probabilistically emits a grass instance at that world position.
+// Kernel 0 (Clear):       resets the scatter counter to 0.
+// Kernel 1 (Scatter):     generates grass positions for one chunk → _GrassBuffer
+// Kernel 2 (ClearCull):   resets the cull counter to 0.
+// Kernel 3 (FrustumCull): per-frame — tests a chunk range against 6 frustum
+//                          planes + max distance, writes survivors to _VisibleBuffer.
 //
-// Output: an AppendStructuredBuffer of GrassInstance structs consumed by
-//   DrawMeshInstancedIndirect on the CPU side.
+// Architecture:
+//   Scatter runs PER CHUNK as the camera moves near new areas.
+//   FrustumCull runs EVERY FRAME, once per active chunk.
+//   Only _VisibleBuffer is read by the rendering shader.
 // =============================================================================
 
 #pragma kernel Clear
 #pragma kernel Scatter
+#pragma kernel ClearCull
+#pragma kernel FrustumCull
 
 struct GrassInstance
 {
@@ -20,12 +27,20 @@ struct GrassInstance
     float  rotation;  // Y-axis rotation in radians
     float2 scale;     // width, height
     float  colorVar;  // 0-1 colour variation seed
-    float  _pad;
+    float  fade;      // distance fade factor (set by cull kernel)
 };
 
 // ── Buffers ────────────────────────────────────────────────────────────
+// Scatter output (persistent between frames)
 RWStructuredBuffer<GrassInstance> _GrassBuffer;
-RWStructuredBuffer<uint>         _CounterBuffer; // [0] = count, used as indirect args
+RWStructuredBuffer<uint>         _CounterBuffer;    // [0] = total scattered count
+
+// Cull output (rebuilt every frame)
+RWStructuredBuffer<GrassInstance> _VisibleBuffer;
+RWStructuredBuffer<uint>         _CullCounterBuffer; // [0] = visible count this frame
+
+// Read-only source for cull kernel
+StructuredBuffer<GrassInstance>  _GrassBufferRead;
 
 // ── Textures ───────────────────────────────────────────────────────────
 Texture2D<float>  _ContactMask;
@@ -33,19 +48,48 @@ Texture2D<float>  _HeightMap;
 SamplerState      sampler_ContactMask;
 SamplerState      sampler_HeightMap;
 
-// ── Parameters ─────────────────────────────────────────────────────────
-float4 _TerrainOrigin;  // (x, y, z, unused) — terrain transform.position
+// ── Scatter Parameters ─────────────────────────────────────────────────
+float4 _TerrainOrigin;  // (x, y, z, unused)
 float4 _TerrainSize;    // (sizeX, sizeY, sizeZ, unused)
-float  _MaskThreshold;  // 0.05 – only spawn where mask > this
-float  _Density;        // probability of spawning at each slot
+float  _Density;
 float  _BaseWidth;
 float  _BaseHeight;
-float  _WidthVariation; // ±fraction of BaseWidth
-float  _HeightVariation;// ±fraction of BaseHeight
-uint   _MaxInstances;
-uint   _GridWidth;      // number of sample columns
-uint   _GridHeight;     // number of sample rows
-float  _Seed;           // random seed offset per bake
+float  _WidthVariation;
+float  _HeightVariation;
+float  _HeightOffset;
+uint   _GridWidth;
+uint   _GridHeight;
+float  _Seed;
+
+// Chunk-based scatter: UV sub-range within the terrain for this chunk
+float2 _ChunkUVMin;       // UV origin of this chunk (0..1 in terrain space)
+float2 _ChunkUVSize;      // UV extent of this chunk
+uint   _ChunkBufferOffset; // where in _GrassBuffer this chunk's data starts
+uint   _ChunkMaxInstances; // max instances this chunk slot can hold
+
+// Edge-band spawning: only spawn where mask is in [_EdgeMin, _EdgeMax]
+// With a blurred mask: center of building ≈ 1.0, edge ≈ 0.2-0.6, far away ≈ 0.0
+// So _EdgeMin=0.05, _EdgeMax=0.45 captures just the outer perimeter ring.
+float  _EdgeMin;          // minimum mask value to spawn (skip dark areas)
+float  _EdgeMax;          // maximum mask value to spawn (skip bright interior)
+float  _GradientBoost;    // >0 adds gradient-based edge detection (0 = band only)
+uint   _MaskWidth;        // mask texture width (for texel offset calculation)
+uint   _MaskHeight;       // mask texture height
+
+// Clustering: modulate density with world-space noise
+float  _ClusterScale;     // world-space noise frequency (smaller = bigger clusters)
+float  _ClusterStrength;  // 0 = uniform, 1 = fully clustered
+float  _ClusterDensityBoost; // extra density multiplier inside clusters (>1 packs tighter)
+
+// ── Cull Parameters ────────────────────────────────────────────────────
+float4 _FrustumPlanes[6]; // camera frustum planes (normal.xyz, distance.w)
+float3 _CameraPos;
+float  _MaxDist;          // hard cutoff distance
+float  _FadeStart;        // distance where fade begins (fraction of _MaxDist, e.g. 0.7)
+float  _FadeThreshold;    // skip instances with fade below this (saves draw calls)
+uint   _MaxInstances;     // capacity of _VisibleBuffer (caps output count)
+uint   _TotalInstances;   // how many instances in this chunk range
+uint   _CullOffset;       // buffer start index for this chunk
 
 // ── Hash function ──────────────────────────────────────────────────────
 float hash(float2 p)
@@ -60,8 +104,33 @@ float hash2(float2 p)
     return hash(p + float2(127.1, 311.7));
 }
 
+// ── Value noise (smooth, used for clustering) ──────────────────────────
+float valueNoise(float2 p)
+{
+    float2 i = floor(p);
+    float2 f = frac(p);
+    // Hermite smoothstep for smooth interpolation
+    float2 u = f * f * (3.0 - 2.0 * f);
+
+    float a = hash(i + float2(0.0, 0.0));
+    float b = hash(i + float2(1.0, 0.0));
+    float c = hash(i + float2(0.0, 1.0));
+    float d = hash(i + float2(1.0, 1.0));
+
+    return lerp(lerp(a, b, u.x), lerp(c, d, u.x), u.y);
+}
+
+// ── Fractal Brownian Motion (2 octaves) — organic cluster shapes ───────
+float fbm2(float2 p)
+{
+    float v = 0.0;
+    v += 0.6667 * valueNoise(p);       p *= 2.01;
+    v += 0.3333 * valueNoise(p);
+    return v;
+}
+
 // ════════════════════════════════════════════════════════════════════════
-//  KERNEL 0: Clear
+//  KERNEL 0: Clear (scatter counter)
 // ════════════════════════════════════════════════════════════════════════
 [numthreads(1, 1, 1)]
 void Clear(uint3 id : SV_DispatchThreadID)
@@ -70,7 +139,7 @@ void Clear(uint3 id : SV_DispatchThreadID)
 }
 
 // ════════════════════════════════════════════════════════════════════════
-//  KERNEL 1: Scatter
+//  KERNEL 1: Scatter (run once to populate _GrassBuffer)
 // ════════════════════════════════════════════════════════════════════════
 [numthreads(8, 8, 1)]
 void Scatter(uint3 id : SV_DispatchThreadID)
@@ -78,59 +147,152 @@ void Scatter(uint3 id : SV_DispatchThreadID)
     if (id.x >= _GridWidth || id.y >= _GridHeight)
         return;
 
-    // Normalised grid position [0..1]
-    float2 uv = float2(
+    // Map thread ID to UV within this chunk's sub-range of the terrain
+    float2 localUV = float2(
         ((float)id.x + 0.5) / (float)_GridWidth,
         ((float)id.y + 0.5) / (float)_GridHeight
     );
+    float2 uv = _ChunkUVMin + localUV * _ChunkUVSize;
 
-    // Hash for randomisation, seeded by grid position + _Seed
     float2 hashInput = float2(id.x + _Seed, id.y + _Seed * 1.37);
     float  rng = hash(hashInput);
 
-    // Sample contact mask
+    // ── Sample mask + compute edge gradient ──
     float maskVal = _ContactMask.SampleLevel(sampler_ContactMask, uv, 0);
 
-    // Only spawn where mask is above threshold and density roll passes
-    if (maskVal < _MaskThreshold)
-        return;
+    // Edge-band test: only spawn in the transition zone (perimeter of buildings)
+    // Skip both dark (far from buildings) and bright (inside buildings) areas
+    bool inBand = (maskVal >= _EdgeMin && maskVal <= _EdgeMax);
 
-    // Scale probability by mask intensity (stronger contact = more grass)
-    float spawnChance = _Density * saturate(maskVal);
+    // Optional gradient boost: detect steep mask transitions (true edges)
+    float edgeWeight = 1.0;
+    if (_GradientBoost > 0.0)
+    {
+        float2 texelSize = float2(1.0 / (float)_MaskWidth, 1.0 / (float)_MaskHeight);
+        float mx0 = _ContactMask.SampleLevel(sampler_ContactMask, uv - float2(texelSize.x, 0), 0);
+        float mx1 = _ContactMask.SampleLevel(sampler_ContactMask, uv + float2(texelSize.x, 0), 0);
+        float my0 = _ContactMask.SampleLevel(sampler_ContactMask, uv - float2(0, texelSize.y), 0);
+        float my1 = _ContactMask.SampleLevel(sampler_ContactMask, uv + float2(0, texelSize.y), 0);
+        float gradient = sqrt((mx1 - mx0) * (mx1 - mx0) + (my1 - my0) * (my1 - my0));
+
+        // Gradient is high at edges, low inside and outside
+        edgeWeight = saturate(gradient * _GradientBoost);
+
+        // Gradient alone can enable spawning even slightly outside the band
+        if (!inBand && edgeWeight < 0.3)
+            return;
+    }
+    else
+    {
+        if (!inBand)
+            return;
+    }
+
+    // Density roll — weighted by edge quality
+    float spawnChance = _Density * edgeWeight;
+
+    // ── Clustering: world-space noise modulates spawn probability ──
+    // Compute approximate world position for noise lookup
+    float approxX = _TerrainOrigin.x + uv.x * _TerrainSize.x;
+    float approxZ = _TerrainOrigin.z + uv.y * _TerrainSize.z;
+    if (_ClusterStrength > 0.0 && _ClusterScale > 0.0)
+    {
+        float2 noiseCoord = float2(approxX, approxZ) * _ClusterScale;
+        float clusterNoise = fbm2(noiseCoord); // 0..1 smooth noise
+
+        // Remap: at full strength, noise < 0.5 kills spawning, noise > 0.5 boosts it
+        // clusterVal: 0 = suppress, 1 = normal, >1 = boosted density inside clusters
+        float clusterVal = lerp(1.0, clusterNoise * _ClusterDensityBoost * 2.0, _ClusterStrength);
+        spawnChance *= clusterVal;
+    }
+
     if (rng > spawnChance)
         return;
 
-    // World position with slight jitter
+    // Cell size in world space — uses chunk UV extent so this works correctly
+    // for both full-terrain (UV 0..1) and per-chunk (UV sub-range) modes.
+    float cellWorldX = _ChunkUVSize.x * _TerrainSize.x / (float)_GridWidth;
+    float cellWorldZ = _ChunkUVSize.y * _TerrainSize.z / (float)_GridHeight;
     float2 jitter = float2(
-        hash(hashInput + float2(13.7, 0)) - 0.5,
-        hash(hashInput + float2(0, 17.3)) - 0.5
-    ) * (_TerrainSize.x / (float)_GridWidth) * 0.8;
+        (hash(hashInput + float2(13.7, 0)) - 0.5) * cellWorldX,
+        (hash(hashInput + float2(0, 17.3)) - 0.5) * cellWorldZ
+    ) * 0.8;
 
     float worldX = _TerrainOrigin.x + uv.x * _TerrainSize.x + jitter.x;
     float worldZ = _TerrainOrigin.z + uv.y * _TerrainSize.z + jitter.y;
 
-    // Sample heightmap to get Y
-    // Re-compute UV after jitter for height
-    float2 heightUV = float2(
+    float2 heightUV = saturate(float2(
         (worldX - _TerrainOrigin.x) / _TerrainSize.x,
         (worldZ - _TerrainOrigin.z) / _TerrainSize.z
-    );
-    heightUV = saturate(heightUV);
-    float heightNorm = _HeightMap.SampleLevel(sampler_HeightMap, heightUV, 0);
-    float worldY = _TerrainOrigin.y + heightNorm * _TerrainSize.y;
+    ));
+    // Unity's heightmapTexture stores values in [0, 0.5] range — multiply by 2
+    float heightRaw = _HeightMap.SampleLevel(sampler_HeightMap, heightUV, 0);
+    float worldY = _TerrainOrigin.y + heightRaw * _TerrainSize.y * 2.0 + _HeightOffset;
 
-    // Build instance
     GrassInstance inst;
     inst.position = float3(worldX, worldY, worldZ);
-    inst.rotation = hash2(hashInput) * 6.2831853; // 0..2π
+    inst.rotation = hash2(hashInput) * 6.2831853;
     inst.scale.x  = _BaseWidth  * (1.0 + (_WidthVariation  * (hash(hashInput + float2(3.1, 7.7)) * 2.0 - 1.0)));
     inst.scale.y  = _BaseHeight * (1.0 + (_HeightVariation  * (hash(hashInput + float2(9.2, 1.3)) * 2.0 - 1.0)));
     inst.colorVar = hash(hashInput + float2(5.5, 5.5));
-    inst._pad = 0;
+    inst.fade = 1.0;
 
-    // Append (atomic)
     uint idx;
     InterlockedAdd(_CounterBuffer[0], 1, idx);
-    if (idx < _MaxInstances)
-        _GrassBuffer[idx] = inst;
+    if (idx < _ChunkMaxInstances)
+        _GrassBuffer[_ChunkBufferOffset + idx] = inst;
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  KERNEL 2: ClearCull (reset visible counter — run once per frame)
+// ════════════════════════════════════════════════════════════════════════
+[numthreads(1, 1, 1)]
+void ClearCull(uint3 id : SV_DispatchThreadID)
+{
+    _CullCounterBuffer[0] = 0;
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  KERNEL 3: FrustumCull (run every frame — tests frustum + distance)
+// ════════════════════════════════════════════════════════════════════════
+[numthreads(64, 1, 1)]
+void FrustumCull(uint3 id : SV_DispatchThreadID)
+{
+    uint localIdx = id.x;
+    if (localIdx >= _TotalInstances)
+        return;
+
+    GrassInstance gi = _GrassBufferRead[_CullOffset + localIdx];
+    float3 pos = gi.position;
+
+    // ── Distance test ──
+    float dist = distance(pos, _CameraPos);
+    if (dist > _MaxDist)
+        return;
+
+    // ── Frustum test (6 planes) ──
+    // Test the grass base position with a small radius tolerance
+    float radius = max(gi.scale.x, gi.scale.y) * 0.5;
+    for (int p = 0; p < 6; p++)
+    {
+        float d = dot(_FrustumPlanes[p].xyz, pos) + _FrustumPlanes[p].w;
+        if (d < -radius)
+            return; // fully outside this plane
+    }
+
+    // ── Compute distance fade ──
+    float fadeStartDist = _MaxDist * _FadeStart;
+    float fade = 1.0 - saturate((dist - fadeStartDist) / (_MaxDist - fadeStartDist));
+
+    // Skip instances that are essentially invisible — saves draw calls
+    if (fade < _FadeThreshold)
+        return;
+
+    gi.fade = fade;
+
+    // ── Append to visible buffer ──
+    uint outIdx;
+    InterlockedAdd(_CullCounterBuffer[0], 1, outIdx);
+    if (outIdx < _MaxInstances)
+        _VisibleBuffer[outIdx] = gi;
 }
