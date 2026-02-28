@@ -1,0 +1,223 @@
+// =============================================================================
+// EdgeScatter.compute
+//
+// Compute shader for the ChunkedEdgeSpawner system.
+// Handles per-chunk edge detection + instance scattering, and per-frame
+// frustum/distance culling across all active chunks.
+//
+// Kernel 0 (Clear):       Reset scatter counter to 0.
+// Kernel 1 (ScatterChunk): Read per-chunk mask, Sobel edge detect, place
+//                           foliage instances into the chunk's buffer slot.
+// Kernel 2 (ClearCull):    Reset cull counter to 0.
+// Kernel 3 (FrustumCull):  Per-frame frustum + distance test, copy survivors
+//                           to _VisibleBuffer with a distance fade value.
+// =============================================================================
+
+#pragma kernel Clear
+#pragma kernel ScatterChunk
+#pragma kernel ClearCull
+#pragma kernel FrustumCull
+
+// ── Instance struct (32 bytes) ─────────────────────────────────────────
+struct FoliageInstance
+{
+    float3 position;   // world-space base
+    float  rotation;   // Y-axis radians
+    float2 scale;      // width, height
+    float  colorVar;   // 0-1 random seed
+    float  fade;       // distance fade (written by cull)
+};
+
+// ── Buffers ────────────────────────────────────────────────────────────
+RWStructuredBuffer<FoliageInstance> _FoliageBuffer;       // scatter output (persistent)
+RWStructuredBuffer<uint>           _CounterBuffer;        // [0] = scatter count
+
+RWStructuredBuffer<FoliageInstance> _VisibleBuffer;       // cull output (per-frame)
+RWStructuredBuffer<uint>            _CullCounterBuffer;   // [0] = visible count
+
+StructuredBuffer<FoliageInstance>   _FoliageBufferRead;   // read-only alias for cull
+
+// ── Textures ───────────────────────────────────────────────────────────
+Texture2D<float> _ChunkMask;       // per-chunk footprint mask (white = object)
+Texture2D<float> _HeightMap;       // terrain heightmap
+SamplerState     sampler_ChunkMask;
+SamplerState     sampler_HeightMap;
+
+// ── Scatter Parameters ─────────────────────────────────────────────────
+float4 _TerrainOrigin;    // (x, y, z, 0)
+float4 _TerrainSize;      // (sizeX, sizeY, sizeZ, 0)
+float2 _ChunkWorldMin;    // world-space XZ of chunk's min corner
+float2 _ChunkWorldSize;   // world-space XZ extent of this chunk
+uint   _GridWidth;         // scatter grid resolution X
+uint   _GridHeight;        // scatter grid resolution Y
+float  _Density;           // spawn probability
+float  _EdgeThreshold;     // Sobel gradient minimum to count as edge
+float  _BaseWidth;
+float  _BaseHeight;
+float  _SizeVariation;
+float  _HeightOffset;
+float  _Seed;              // per-chunk random seed offset
+uint   _BufferOffset;      // start index in _FoliageBuffer for this chunk
+uint   _MaxPerChunk;       // max instances this chunk slot can hold
+
+// ── Cull Parameters ────────────────────────────────────────────────────
+float4 _FrustumPlanes[6];
+float3 _CameraPos;
+float  _MaxDist;
+float  _FadeStart;         // fraction of _MaxDist where fade begins
+float  _FadeThreshold;     // skip instances below this fade
+uint   _MaxVisible;        // capacity of _VisibleBuffer
+uint   _TotalInstances;    // instance count in this chunk range
+uint   _CullOffset;        // buffer start index for this cull dispatch
+
+// ── Hash functions ─────────────────────────────────────────────────────
+float hash(float2 p)
+{
+    float3 p3 = frac(float3(p.xyx) * 0.1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return frac((p3.x + p3.y) * p3.z);
+}
+
+float hash2(float2 p)
+{
+    return hash(p + float2(127.1, 311.7));
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  KERNEL 0: Clear — reset scatter counter
+// ════════════════════════════════════════════════════════════════════════
+[numthreads(1, 1, 1)]
+void Clear(uint3 id : SV_DispatchThreadID)
+{
+    _CounterBuffer[0] = 0;
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  KERNEL 1: ScatterChunk — Sobel edge detect + instance placement
+// ════════════════════════════════════════════════════════════════════════
+[numthreads(8, 8, 1)]
+void ScatterChunk(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _GridWidth || id.y >= _GridHeight)
+        return;
+
+    // UV within the chunk mask (0..1)
+    float2 uv = float2(
+        ((float)id.x + 0.5) / (float)_GridWidth,
+        ((float)id.y + 0.5) / (float)_GridHeight
+    );
+
+    // ── Sobel 3×3 edge detection on the mask ──
+    float2 texel = float2(1.0 / (float)_GridWidth, 1.0 / (float)_GridHeight);
+
+    float tl = _ChunkMask.SampleLevel(sampler_ChunkMask, uv + float2(-texel.x, -texel.y), 0);
+    float tc = _ChunkMask.SampleLevel(sampler_ChunkMask, uv + float2(       0, -texel.y), 0);
+    float tr = _ChunkMask.SampleLevel(sampler_ChunkMask, uv + float2( texel.x, -texel.y), 0);
+    float ml = _ChunkMask.SampleLevel(sampler_ChunkMask, uv + float2(-texel.x,        0), 0);
+    float mr = _ChunkMask.SampleLevel(sampler_ChunkMask, uv + float2( texel.x,        0), 0);
+    float bl = _ChunkMask.SampleLevel(sampler_ChunkMask, uv + float2(-texel.x,  texel.y), 0);
+    float bc = _ChunkMask.SampleLevel(sampler_ChunkMask, uv + float2(       0,  texel.y), 0);
+    float br = _ChunkMask.SampleLevel(sampler_ChunkMask, uv + float2( texel.x,  texel.y), 0);
+
+    // Sobel gradient magnitude
+    float gx = (-tl - 2.0 * ml - bl) + (tr + 2.0 * mr + br);
+    float gy = (-tl - 2.0 * tc - tr) + (bl + 2.0 * bc + br);
+    float gradient = sqrt(gx * gx + gy * gy);
+
+    // Skip non-edge areas
+    if (gradient < _EdgeThreshold)
+        return;
+
+    // ── Density roll modulated by edge strength ──
+    float2 hashInput = float2(id.x + _Seed, id.y + _Seed * 1.37);
+    float rng = hash(hashInput);
+    float spawnChance = _Density * saturate(gradient * 2.0);
+    if (rng > spawnChance)
+        return;
+
+    // ── Compute world position ──
+    float cellWorldX = _ChunkWorldSize.x / (float)_GridWidth;
+    float cellWorldZ = _ChunkWorldSize.y / (float)_GridHeight;
+    float2 jitter = float2(
+        (hash(hashInput + float2(13.7, 0)) - 0.5) * cellWorldX,
+        (hash(hashInput + float2(0, 17.3)) - 0.5) * cellWorldZ
+    ) * 0.8;
+
+    float worldX = _ChunkWorldMin.x + uv.x * _ChunkWorldSize.x + jitter.x;
+    float worldZ = _ChunkWorldMin.y + uv.y * _ChunkWorldSize.y + jitter.y;
+
+    // ── Sample terrain height ──
+    float2 heightUV = saturate(float2(
+        (worldX - _TerrainOrigin.x) / _TerrainSize.x,
+        (worldZ - _TerrainOrigin.z) / _TerrainSize.z
+    ));
+    float heightRaw = _HeightMap.SampleLevel(sampler_HeightMap, heightUV, 0);
+    float worldY = _TerrainOrigin.y + heightRaw * _TerrainSize.y * 2.0 + _HeightOffset;
+
+    // ── Build instance ──
+    FoliageInstance inst;
+    inst.position = float3(worldX, worldY, worldZ);
+    inst.rotation = hash2(hashInput) * 6.2831853; // full 2π range
+    float sizeRng = hash(hashInput + float2(9.2, 1.3)) * 2.0 - 1.0;
+    inst.scale.x  = _BaseWidth  * (1.0 + _SizeVariation * (hash(hashInput + float2(3.1, 7.7)) * 2.0 - 1.0));
+    inst.scale.y  = _BaseHeight * (1.0 + _SizeVariation * sizeRng);
+    inst.colorVar = hash(hashInput + float2(5.5, 5.5));
+    inst.fade     = 1.0;
+
+    // ── Append ──
+    uint idx;
+    InterlockedAdd(_CounterBuffer[0], 1, idx);
+    if (idx < _MaxPerChunk)
+        _FoliageBuffer[_BufferOffset + idx] = inst;
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  KERNEL 2: ClearCull — reset visible counter (once per frame)
+// ════════════════════════════════════════════════════════════════════════
+[numthreads(1, 1, 1)]
+void ClearCull(uint3 id : SV_DispatchThreadID)
+{
+    _CullCounterBuffer[0] = 0;
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  KERNEL 3: FrustumCull — per-frame frustum + distance test
+// ════════════════════════════════════════════════════════════════════════
+[numthreads(64, 1, 1)]
+void FrustumCull(uint3 id : SV_DispatchThreadID)
+{
+    uint localIdx = id.x;
+    if (localIdx >= _TotalInstances)
+        return;
+
+    FoliageInstance gi = _FoliageBufferRead[_CullOffset + localIdx];
+    float3 pos = gi.position;
+
+    // ── Distance test ──
+    float dist = distance(pos, _CameraPos);
+    if (dist > _MaxDist)
+        return;
+
+    // ── Frustum test (6 planes) ──
+    float radius = max(gi.scale.x, gi.scale.y) * 0.5;
+    for (int p = 0; p < 6; p++)
+    {
+        float d = dot(_FrustumPlanes[p].xyz, pos) + _FrustumPlanes[p].w;
+        if (d < -radius)
+            return;
+    }
+
+    // ── Distance fade ──
+    float fadeStartDist = _MaxDist * _FadeStart;
+    float fade = 1.0 - saturate((dist - fadeStartDist) / (_MaxDist - fadeStartDist));
+    if (fade < _FadeThreshold)
+        return;
+
+    gi.fade = fade;
+
+    // ── Append to visible buffer ──
+    uint outIdx;
+    InterlockedAdd(_CullCounterBuffer[0], 1, outIdx);
+    if (outIdx < _MaxVisible)
+        _VisibleBuffer[outIdx] = gi;
+}

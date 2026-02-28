@@ -38,6 +38,8 @@ MonoBehaviour:
   Priority: 7
   resetInputOnFailed: 0
   ResetLastState: 0
+  RemoveForceOnEnter: 0
+  ForceDamping: 0
   General:
     modify: -1
     RootMotion: 1
@@ -128,7 +130,7 @@ MonoBehaviour:
     UseConstant: 1
     ConstantValue:
       serializedVersion: 2
-      m_Bits: 1
+      m_Bits: 65
     Variable: {fileID: 0}
   automatic:
     UseConstant: 1
@@ -662,6 +664,106 @@ MonoBehaviour:
     OnlyGrounded: 1
     ForwardMultiplier: 1
     Height: 1.65
+    LedgeExitDistance: 0.28
+    ExitTime: 0.9
+    AlingOffset: {x: 0.1, y: -1.49}
+    Orient: 1
+    OrientSmoothness: 10
+    AdditivePosition: 0
+    HeightSpeed: 1
+    ForwardSpeed: 2
+    HeightCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 0.45
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 0.55
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    ForwardCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 0.45
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 0.55
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+  - name: Ledge Far
+    EnterStatus: 3
+    MaxVSpeed: 0
+    LastState: {fileID: 11400000, guid: 3787b6d94d5454740bf36d57436185b0, type: 2}
+    CheckUpwards: 0
+    OnlyGrounded: 1
+    ForwardMultiplier: 1
+    Height: 2.1
     LedgeExitDistance: 0.28
     ExitTime: 0.9
     AlingOffset: {x: 0.1, y: -1.49}
