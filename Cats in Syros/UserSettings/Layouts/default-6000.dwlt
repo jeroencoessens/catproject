@@ -19,7 +19,7 @@ MonoBehaviour:
     width: 2402
     height: 1382
   m_ShowMode: 4
-  m_Title: Project
+  m_Title: Hierarchy
   m_RootView: {fileID: 2}
   m_MinSize: {x: 875, y: 306}
   m_MaxSize: {x: 10000, y: 10000}
@@ -120,7 +120,7 @@ MonoBehaviour:
   m_MinSize: {x: 300, y: 100}
   m_MaxSize: {x: 24288, y: 16192}
   vertical: 0
-  controlID: 53
+  controlID: 24
   draggingID: 0
 --- !u!114 &6
 MonoBehaviour:
@@ -146,7 +146,7 @@ MonoBehaviour:
   m_MinSize: {x: 100, y: 100}
   m_MaxSize: {x: 8096, y: 16192}
   vertical: 1
-  controlID: 54
+  controlID: 58
   draggingID: 0
 --- !u!114 &7
 MonoBehaviour:
@@ -867,9 +867,9 @@ MonoBehaviour:
   m_AudioPlay: 0
   m_DebugDrawModesUseInteractiveLightBakingData: 0
   m_Position:
-    m_Target: {x: 1475.7524, y: 28.337572, z: 1828.5953}
+    m_Target: {x: 1495.0847, y: 29.154587, z: 1770.4055}
     speed: 2
-    m_Value: {x: 1475.7524, y: 28.337572, z: 1828.5953}
+    m_Value: {x: 1495.0847, y: 29.154587, z: 1770.4055}
   m_RenderMode: 0
   m_CameraMode:
     drawMode: 0
@@ -915,17 +915,17 @@ MonoBehaviour:
     m_GridAxis: 1
     m_gridOpacity: 0.5
   m_Rotation:
-    m_Target: {x: -0.03819319, y: 0.10084708, z: -0.0038757392, w: -0.99416465}
+    m_Target: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
     speed: 2
-    m_Value: {x: -0.03819305, y: 0.10084672, z: -0.0038757252, w: -0.99416107}
+    m_Value: {x: 0.70710677, y: -0.000000028846287, z: 0.00000001628335, w: 0.7071068}
   m_Size:
-    m_Target: 15.164706
+    m_Target: 4.8588357
     speed: 2
-    m_Value: 15.164706
+    m_Value: 4.8588357
   m_Ortho:
-    m_Target: 0
+    m_Target: 1
     speed: 2
-    m_Value: 0
+    m_Value: 1
   m_CameraSettings:
     m_Speed: 1
     m_SpeedNormalized: 0.5
@@ -2007,7 +2007,7 @@ MonoBehaviour:
     m_SkipHidden: 0
     m_SearchArea: 1
     m_Folders:
-    - Assets
+    - Assets/Prefabs
     m_Globs: []
     m_ProductIds: 
     m_AnyWithAssetOrigin: 0
@@ -2017,16 +2017,16 @@ MonoBehaviour:
   m_ViewMode: 1
   m_StartGridSize: 70
   m_LastFolders:
-  - Assets
+  - Assets/Prefabs
   m_LastFoldersGridSize: 70
   m_LastProjectPath: /Users/jcoessens/REPOS/CATS/catproject/Cats in Syros
   m_LockTracker:
     m_IsLocked: 0
   m_FolderTreeState:
-    scrollPos: {x: 0, y: 79}
-    m_SelectedIDs: c0820200
-    m_LastClickedID: 164544
-    m_ExpandedIDs: 00000000c0820200c2820200c4820200c6820200c8820200ca820200cc820200ce820200d0820200d2820200d4820200d6820200d8820200da820200dc820200de820200e0820200e2820200e4820200e2840200fe8402004c121b0050121b0078f4520000ca9a3b
+    scrollPos: {x: 0, y: 869}
+    m_SelectedIDs: 8ab00200
+    m_LastClickedID: 176266
+    m_ExpandedIDs: 000000009aad02009cad02009ead0200a0ad0200a2ad0200a4ad0200a6ad0200a8ad0200aaad0200acad0200aead0200b0ad0200b2ad0200b4ad0200b6ad0200b8ad0200baad0200bcad0200bead0200c0ad0200c2ad0200c4ad0200c6ad0200c8ad020000ca9a3b
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -2055,7 +2055,7 @@ MonoBehaviour:
     scrollPos: {x: 0, y: 0}
     m_SelectedIDs: 
     m_LastClickedID: 0
-    m_ExpandedIDs: 00000000c0820200c2820200c4820200c6820200c8820200ca820200cc820200ce820200d0820200d2820200d4820200d6820200d8820200da820200dc820200de820200e0820200e2820200e4820200e6820200
+    m_ExpandedIDs: 000000009aad02009cad02009ead0200a0ad0200a2ad0200a4ad0200a6ad0200a8ad0200aaad0200acad0200aead0200b0ad0200b2ad0200b4ad0200b6ad0200b8ad0200baad0200bcad0200bead0200c0ad0200c2ad0200c4ad0200c6ad0200c8ad0200
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -2249,7 +2249,7 @@ MonoBehaviour:
       scrollPos: {x: 0, y: 0}
       m_SelectedIDs: 
       m_LastClickedID: 0
-      m_ExpandedIDs: 08fffaff848dfcffda90fcff7c93fcff40a2fcffc602fdff7218fdff6837feff4a39feff9847feffb847feff64ddfeff001dffff10fbffff140d010010230100e02c0100ecb70100b23239000a5e3d0018e93d00
+      m_ExpandedIDs: 600afdff7a0afdff9811feff8224feffc24ffeffc0f7feff10fbffffcce40600b0e80600
       m_RenameOverlay:
         m_UserAcceptedRename: 0
         m_Name: 
@@ -2266,7 +2266,7 @@ MonoBehaviour:
         m_OriginalEventType: 11
         m_IsRenamingFilename: 0
         m_TrimLeadingAndTrailingWhitespace: 0
-        m_ClientGUIView: {fileID: 0}
+        m_ClientGUIView: {fileID: 9}
       m_SearchString: 
     m_ExpandedScenes: []
     m_CurrenRootInstanceID: 0
