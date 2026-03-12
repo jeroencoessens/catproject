@@ -51,17 +51,7 @@ Shader "Hidden/EdgeSpawner/FoliageRender"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
-
-            struct FoliageInstance
-            {
-                float3 position;
-                float  rotation;
-                float2 scale;
-                float  colorVar;
-                float  fade;
-            };
-
-            StructuredBuffer<FoliageInstance> _VisibleBuffer;
+            #include "FoliageCommon.hlsl"
 
             TEXTURE2D(_MainTex);
             SAMPLER(sampler_MainTex);
@@ -77,84 +67,50 @@ Shader "Hidden/EdgeSpawner/FoliageRender"
                 float  _UniformScale;
             CBUFFER_END
 
-            struct Attributes
-            {
-                float4 posOS : POSITION;
-                float2 uv    : TEXCOORD0;
-            };
-
             struct Varyings
             {
                 float4 posCS    : SV_POSITION;
                 float2 uv       : TEXCOORD0;
                 float  fogCoord : TEXCOORD1;
-                half   colorVar : TEXCOORD2;
+                float4 packed   : TEXCOORD2;   // .x = colorVar, .y = fade, .zw = free
                 float3 worldPos : TEXCOORD3;
-                half   fade     : TEXCOORD4;
             };
 
-            Varyings vert(Attributes IN, uint instanceID : SV_InstanceID)
+            Varyings vert(FoliageAttributes IN, uint instanceID : SV_InstanceID)
             {
                 Varyings OUT;
                 FoliageInstance gi = _VisibleBuffer[instanceID];
 
-                float w = gi.scale.x * _UniformScale;
-                float h = gi.scale.y * _UniformScale;
-
-                float3 localPos = IN.posOS.xyz;
-                localPos.x *= w;
-                localPos.z *= w;
-                localPos.y *= h;
-
-                // Anchor at base
-                localPos.y += h * 0.5;
-
-                // Rotate around Y
-                float s, c;
-                sincos(gi.rotation, s, c);
-                float3 rotated;
-                rotated.x = localPos.x * c - localPos.z * s;
-                rotated.z = localPos.x * s + localPos.z * c;
-                rotated.y = localPos.y;
-
-                float3 worldPos = gi.position + rotated;
-
-                // Wind displacement (stronger at top)
-                float windPhase = _Time.y * _WindSpeed + gi.position.x * 0.3 + gi.position.z * 0.2;
-                float windAmount = sin(windPhase) * _WindStrength;
-                float heightFactor = saturate(IN.posOS.y + 0.5);
-                worldPos.x += windAmount * heightFactor;
-                worldPos.z += windAmount * 0.5 * heightFactor;
-
-                // Distance fade — shrink into ground
-                worldPos.y = gi.position.y + (worldPos.y - gi.position.y) * gi.fade;
+                float3 worldPos = ComputeFoliageWorldPos(
+                    IN.posOS.xyz, gi, _UniformScale, _WindSpeed, _WindStrength);
 
                 OUT.posCS    = TransformWorldToHClip(worldPos);
                 OUT.uv       = TRANSFORM_TEX(IN.uv, _MainTex);
                 OUT.fogCoord = ComputeFogFactor(OUT.posCS.z);
-                OUT.colorVar = gi.colorVar;
+                OUT.packed   = float4(gi.colorVar, gi.fade, 0, 0);
                 OUT.worldPos = worldPos;
-                OUT.fade     = gi.fade;
                 return OUT;
             }
 
+            // Precomputed color-variation constants
+            static const half3 _VarScale  = half3(0.10, 0.15, 0.05);
+            static const half3 _VarOffset = half3(0.05, 0.075, 0.025);
+
             half4 frag(Varyings IN) : SV_Target
             {
+                half  colorVar = IN.packed.x;
+                half  fade     = IN.packed.y;
+
                 half4 tex = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, IN.uv);
-                half fadedCutoff = _Cutoff + (1.0 - IN.fade) * 0.5;
+                half fadedCutoff = _Cutoff + (1.0 - fade) * 0.5;
                 clip(tex.a - fadedCutoff);
 
                 // Base-to-tip gradient colour
                 float heightGrad = saturate(IN.uv.y);
                 half3 grassColor = lerp(_BaseColor.rgb, _TipColor.rgb, heightGrad);
 
-                // Per-instance variation
-                half3 variation = half3(
-                    IN.colorVar * 0.10 - 0.05,
-                    IN.colorVar * 0.15 - 0.075,
-                    IN.colorVar * 0.05 - 0.025
-                );
-                grassColor += variation * _ColorVariation;
+                // Per-instance variation (vectorised)
+                grassColor += (colorVar * _VarScale - _VarOffset) * _ColorVariation;
 
                 // Simple diffuse
                 Light mainLight = GetMainLight();
@@ -186,17 +142,7 @@ Shader "Hidden/EdgeSpawner/FoliageRender"
             #pragma target 4.5
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-
-            struct FoliageInstance
-            {
-                float3 position;
-                float  rotation;
-                float2 scale;
-                float  colorVar;
-                float  fade;
-            };
-
-            StructuredBuffer<FoliageInstance> _VisibleBuffer;
+            #include "FoliageCommon.hlsl"
 
             TEXTURE2D(_MainTex);
             SAMPLER(sampler_MainTex);
@@ -212,49 +158,19 @@ Shader "Hidden/EdgeSpawner/FoliageRender"
                 float  _UniformScale;
             CBUFFER_END
 
-            struct Attributes
-            {
-                float4 posOS : POSITION;
-                float2 uv    : TEXCOORD0;
-            };
-
             struct Varyings
             {
                 float4 posCS : SV_POSITION;
                 float2 uv    : TEXCOORD0;
             };
 
-            Varyings vertShadow(Attributes IN, uint instanceID : SV_InstanceID)
+            Varyings vertShadow(FoliageAttributes IN, uint instanceID : SV_InstanceID)
             {
                 Varyings OUT;
                 FoliageInstance gi = _VisibleBuffer[instanceID];
 
-                float w = gi.scale.x * _UniformScale;
-                float h = gi.scale.y * _UniformScale;
-
-                float3 localPos = IN.posOS.xyz;
-                localPos.x *= w;
-                localPos.z *= w;
-                localPos.y *= h;
-                localPos.y += h * 0.5;
-
-                float s, c;
-                sincos(gi.rotation, s, c);
-                float3 rotated;
-                rotated.x = localPos.x * c - localPos.z * s;
-                rotated.z = localPos.x * s + localPos.z * c;
-                rotated.y = localPos.y;
-
-                float3 worldPos = gi.position + rotated;
-
-                // Wind — must match forward pass
-                float windPhase = _Time.y * _WindSpeed + gi.position.x * 0.3 + gi.position.z * 0.2;
-                float windAmount = sin(windPhase) * _WindStrength;
-                float heightFactor = saturate(IN.posOS.y + 0.5);
-                worldPos.x += windAmount * heightFactor;
-                worldPos.z += windAmount * 0.5 * heightFactor;
-
-                worldPos.y = gi.position.y + (worldPos.y - gi.position.y) * gi.fade;
+                float3 worldPos = ComputeFoliageWorldPos(
+                    IN.posOS.xyz, gi, _UniformScale, _WindSpeed, _WindStrength);
 
                 OUT.posCS = TransformWorldToHClip(worldPos);
                 OUT.uv = TRANSFORM_TEX(IN.uv, _MainTex);

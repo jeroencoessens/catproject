@@ -33,7 +33,7 @@ RWStructuredBuffer<FoliageInstance> _FoliageBuffer;       // scatter output (per
 RWStructuredBuffer<uint>           _CounterBuffer;        // [0] = scatter count
 
 RWStructuredBuffer<FoliageInstance> _VisibleBuffer;       // cull output (per-frame)
-RWStructuredBuffer<uint>            _CullCounterBuffer;   // [0] = visible count
+RWByteAddressBuffer                 _ArgsBufferRW;        // indirect args (write instance count at byte 4)
 
 StructuredBuffer<FoliageInstance>   _FoliageBufferRead;   // read-only alias for cull
 
@@ -177,7 +177,7 @@ void ScatterChunk(uint3 id : SV_DispatchThreadID)
 [numthreads(1, 1, 1)]
 void ClearCull(uint3 id : SV_DispatchThreadID)
 {
-    _CullCounterBuffer[0] = 0;
+    _ArgsBufferRW.Store(4, 0);   // clear args[1] (instance count) — byte offset 4
 }
 
 // ════════════════════════════════════════════════════════════════════════
@@ -215,9 +215,9 @@ void FrustumCull(uint3 id : SV_DispatchThreadID)
 
     gi.fade = fade;
 
-    // ── Append to visible buffer ──
+    // ── Append to visible buffer (atomic-add directly into indirect args) ──
     uint outIdx;
-    InterlockedAdd(_CullCounterBuffer[0], 1, outIdx);
+    _ArgsBufferRW.InterlockedAdd(4, 1, outIdx);   // args[1] = instance count
     if (outIdx < _MaxVisible)
         _VisibleBuffer[outIdx] = gi;
 }

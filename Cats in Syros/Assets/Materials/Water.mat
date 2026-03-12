@@ -12,6 +12,7 @@ Material:
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
+  - _COLORBLEND_ON
   - _ENABLEFOAM_ON
   m_InvalidKeywords: []
   m_LightmapFlags: 1
@@ -96,17 +97,20 @@ Material:
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0
     - _CoastalBlending: 1
+    - _ColorBlendScale: 0.1
+    - _ColorBlendStrength: 0.994
     - _Cull: 2
     - _Cutoff: 0.5
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
     - _DstBlend: 10
     - _DstBlendAlpha: 10
+    - _EnableColorBlend: 1
     - _EnableFoam: 1
     - _EnvironmentReflections: 1
-    - _FoamDistance: 1
-    - _FoamOpacity: 0.75
-    - _FoamTiling: 35
+    - _FoamDistance: 0.636
+    - _FoamOpacity: 0.88
+    - _FoamTiling: 10
     - _GlossMapScale: 1
     - _Glossiness: 0.968
     - _GlossyReflections: 1
@@ -126,8 +130,8 @@ Material:
     - _SrcBlendAlpha: 1
     - _Surface: 1
     - _Tiling: 0.15
-    - _Transparency: 10
-    - _TransparencyFade: 1
+    - _Transparency: 7.27
+    - _TransparencyFade: 1.082
     - _UVSec: 0
     - _WavesSpeed: 0.15
     - _WorkflowMode: 1
@@ -138,7 +142,9 @@ Material:
     - _Color: {r: 0.10412956, g: 0.33678004, b: 0.49056596, a: 0.89411765}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
-    - _WaterColor: {r: 0.2687344, g: 0.42210302, b: 0.57547164, a: 0}
+    - _WaterColor: {r: 0.17590779, g: 0.3713094, b: 0.5566038, a: 0}
+    - _WaterColor2: {r: 0.111205064, g: 0.4811321, b: 0.43175218, a: 0}
+    - _WaterDepthColor: {r: 0.0744927, g: 0.38698572, b: 0.509434, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
 --- !u!114 &5423185245537160356

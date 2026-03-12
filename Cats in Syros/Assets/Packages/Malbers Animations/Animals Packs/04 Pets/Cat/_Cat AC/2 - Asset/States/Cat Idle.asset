@@ -38,6 +38,8 @@ MonoBehaviour:
   Priority: 1
   resetInputOnFailed: 0
   ResetLastState: 0
+  RemoveForceOnEnter: 0
+  ForceDamping: 0
   General:
     modify: -1
     RootMotion: 1

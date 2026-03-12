@@ -26,13 +26,11 @@ public class SimpleCharacterZoom : MonoBehaviour
         {
             camera.Lens.FieldOfView = zoomedInFOV;
             sprintCamera.Lens.FieldOfView = zoomedInFOV;
-            Debug.Log("zoomed in");
         }        
         else
         {
             camera.Lens.FieldOfView = defaultFOVNormal;
             sprintCamera.Lens.FieldOfView = defaultFOVSprint;
-            Debug.Log("zoomed out");
         }
     }
 }

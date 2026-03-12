@@ -38,6 +38,8 @@ MonoBehaviour:
   Priority: 2
   resetInputOnFailed: 0
   ResetLastState: 0
+  RemoveForceOnEnter: 0
+  ForceDamping: 0
   General:
     modify: 15423
     RootMotion: 1
@@ -131,7 +133,7 @@ MonoBehaviour:
   MovementStrafe: 1
   IdleStrafe: 1
   m_debug: 1
-  Editor_Tabs1: 3
+  Editor_Tabs1: 0
   selectedSpeed: -1
   SpeedTabs: 0
   SpeedSets: []

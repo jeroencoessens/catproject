@@ -193,8 +193,11 @@ public class ChunkedEdgeSpawner : MonoBehaviour
     ComputeBuffer _foliageBuffer;
     ComputeBuffer _counterBuffer;
     ComputeBuffer _visibleBuffer;
-    ComputeBuffer _cullCounterBuffer;
     ComputeBuffer _argsBuffer;
+
+    // Async GPU readback for debug visible count (no stall)
+    bool _asyncReadPending;
+    int  _asyncVisibleCount;
 
     // Mask capture
     RenderTexture _workMaskRT;
@@ -219,15 +222,13 @@ public class ChunkedEdgeSpawner : MonoBehaviour
     // Cull helpers
     readonly Plane[]   _planes   = new Plane[6];
     readonly Vector4[] _planeVec = new Vector4[6];
-    readonly uint[]    _argsReset = new uint[5];
 
     // Stats
     int _scatteredCount;
-    int _lastVisibleCount;
 
     // ── Public Read-Only ───────────────────────────────────────────────
     public int ScatteredCount => _scatteredCount;
-    public int VisibleCount   => _lastVisibleCount;
+    public int VisibleCount   => _asyncVisibleCount;
     public int ActiveChunkCount => _activeChunks?.Count ?? 0;
 
     // ═══════════════════════════════════════════════════════════════════
@@ -514,6 +515,7 @@ public class ChunkedEdgeSpawner : MonoBehaviour
         if (cam.cameraType == CameraType.Preview || cam.cameraType == CameraType.Reflection) return;
         if (_renderMat == null || scatterCompute == null) return;
         if (_foliageBuffer == null || _visibleBuffer == null) return;
+        if (_argsBuffer == null) return;
 
         CullAndDraw(cam);
     }
@@ -530,8 +532,8 @@ public class ChunkedEdgeSpawner : MonoBehaviour
         for (int i = 0; i < 6; i++)
             _planeVec[i] = new Vector4(_planes[i].normal.x, _planes[i].normal.y, _planes[i].normal.z, _planes[i].distance);
 
-        // Clear cull counter
-        scatterCompute.SetBuffer(_kClearCull, "_CullCounterBuffer", _cullCounterBuffer);
+        // Clear cull counter (writes 0 to args[1] on GPU)
+        scatterCompute.SetBuffer(_kClearCull, "_ArgsBufferRW", _argsBuffer);
         scatterCompute.Dispatch(_kClearCull, 1, 1, 1);
 
         // Set shared cull params
@@ -545,7 +547,7 @@ public class ChunkedEdgeSpawner : MonoBehaviour
         scatterCompute.SetInt("_MaxVisible", totalBufferSize);
         scatterCompute.SetBuffer(_kCull, "_FoliageBufferRead", _foliageBuffer);
         scatterCompute.SetBuffer(_kCull, "_VisibleBuffer", _visibleBuffer);
-        scatterCompute.SetBuffer(_kCull, "_CullCounterBuffer", _cullCounterBuffer);
+        scatterCompute.SetBuffer(_kCull, "_ArgsBufferRW", _argsBuffer);
 
         // Dispatch cull per active chunk
         foreach (var kv in _activeChunks)
@@ -560,20 +562,18 @@ public class ChunkedEdgeSpawner : MonoBehaviour
             scatterCompute.Dispatch(_kCull, groups, 1, 1);
         }
 
-        // Read visible count
-        uint[] visCount = new uint[1];
-        _cullCounterBuffer.GetData(visCount);
-        _lastVisibleCount = (int)visCount[0];
-
-        if (_lastVisibleCount <= 0) return;
-
-        // Set draw args
-        _argsReset[0] = (uint)_crossMesh.GetIndexCount(0);
-        _argsReset[1] = (uint)_lastVisibleCount;
-        _argsReset[2] = (uint)_crossMesh.GetIndexStart(0);
-        _argsReset[3] = (uint)_crossMesh.GetBaseVertex(0);
-        _argsReset[4] = 0;
-        _argsBuffer.SetData(_argsReset);
+        // Async readback for debug stats (non-blocking — one frame latency is fine)
+        if (!_asyncReadPending)
+        {
+            _asyncReadPending = true;
+            UnityEngine.Rendering.AsyncGPUReadback.Request(_argsBuffer, sizeof(uint), sizeof(uint),
+                (AsyncGPUReadbackRequest req) =>
+                {
+                    _asyncReadPending = false;
+                    if (!req.hasError)
+                        _asyncVisibleCount = (int)req.GetData<uint>()[0];
+                });
+        }
 
         // Set visible buffer on material
         _renderMat.SetBuffer("_VisibleBuffer", _visibleBuffer);
@@ -630,14 +630,12 @@ public class ChunkedEdgeSpawner : MonoBehaviour
             ReleaseBuffer(ref _foliageBuffer);
             ReleaseBuffer(ref _visibleBuffer);
             ReleaseBuffer(ref _counterBuffer);
-            ReleaseBuffer(ref _cullCounterBuffer);
             ReleaseBuffer(ref _argsBuffer);
 
             _foliageBuffer     = new ComputeBuffer(totalSlots, 32); // sizeof(FoliageInstance)
             _visibleBuffer     = new ComputeBuffer(totalSlots, 32);
             _counterBuffer     = new ComputeBuffer(1, sizeof(uint));
-            _cullCounterBuffer = new ComputeBuffer(1, sizeof(uint));
-            _argsBuffer        = new ComputeBuffer(1, 5 * sizeof(uint), ComputeBufferType.IndirectArguments);
+            _argsBuffer        = new ComputeBuffer(5, sizeof(uint), ComputeBufferType.IndirectArguments | ComputeBufferType.Raw);
 
             // Rebuild slot stack
             _freeSlots.Clear();
@@ -696,6 +694,19 @@ public class ChunkedEdgeSpawner : MonoBehaviour
 
         // Cross mesh
         BuildCrossMesh();
+
+        // Pre-fill indirect args with mesh constants (only instance count changes per frame)
+        if (_crossMesh != null && _argsBuffer != null)
+        {
+            _argsBuffer.SetData(new uint[]
+            {
+                (uint)_crossMesh.GetIndexCount(0),   // [0] index count per instance
+                0u,                                   // [1] instance count (written by GPU each frame)
+                (uint)_crossMesh.GetIndexStart(0),    // [2] start index location
+                (uint)_crossMesh.GetBaseVertex(0),    // [3] base vertex location
+                0u                                    // [4] start instance location
+            });
+        }
     }
 
     void CleanupAll()
@@ -713,7 +724,6 @@ public class ChunkedEdgeSpawner : MonoBehaviour
         ReleaseBuffer(ref _foliageBuffer);
         ReleaseBuffer(ref _visibleBuffer);
         ReleaseBuffer(ref _counterBuffer);
-        ReleaseBuffer(ref _cullCounterBuffer);
         ReleaseBuffer(ref _argsBuffer);
 
         // RTs
@@ -746,7 +756,7 @@ public class ChunkedEdgeSpawner : MonoBehaviour
         _cpuCache?.Clear();
         _freeSlots?.Clear();
         _scatteredCount   = 0;
-        _lastVisibleCount = 0;
+        _asyncVisibleCount = 0;
         _kernelsCached    = false;
     }
 
@@ -837,7 +847,7 @@ public class ChunkedEdgeSpawner : MonoBehaviour
         }
         _cpuCache?.Clear();
         _scatteredCount   = 0;
-        _lastVisibleCount = 0;
+        _asyncVisibleCount = 0;
     }
 
     /// <summary>Clear CPU cache (forces re-capture when chunks reload).</summary>

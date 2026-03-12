@@ -8,6 +8,11 @@ Shader "Raygeas/URP/Water"
 		[HideInInspector] _EmissionColor("Emission Color", Color) = (1,1,1,1)
 		[NoScaleOffset][Normal] _WavesNormal( "Waves Normal", 2D ) = "bump" {}
 		[Header(Water)][Space(5)] _WaterColor( "Water Color", Color ) = ( 0.2705882, 0.4823529, 0.5372549, 0 )
+		[Header(Color Blend)][Space(5)][Toggle(_COLORBLEND_ON)] _EnableColorBlend( "Enable Color Blend", Float ) = 0
+		_WaterColor2( "Water Color 2", Color ) = ( 0.1450980, 0.3176471, 0.4117647, 0 )
+		_WaterDepthColor( "Depth Color", Color ) = ( 0.04705882, 0.1372549, 0.2156863, 0 )
+		_ColorBlendScale( "Blend Scale", Float ) = 0.5
+		_ColorBlendStrength( "Blend Strength", Range( 0, 1 ) ) = 0.7
 		_Smoothness( "Smoothness", Range( 0, 1 ) ) = 0.96
 		_Tiling( "Tiling", Float ) = 0.15
 		_WavesSpeed( "Waves Speed", Range( 0.1, 1 ) ) = 0.3
@@ -182,6 +187,20 @@ Shader "Raygeas/URP/Water"
 			return tess;
 		}
 		#endif //ASE_TESS_FUNCS
+
+		// Smooth value noise used for the water colour blend feature
+		float ASE_WaterSmoothNoise( float2 p )
+		{
+			float2 i = floor( p );
+			float2 f = frac( p );
+			float2 u = f * f * ( 3.0 - 2.0 * f );
+			float a = frac( sin( dot( i,               float2( 127.1, 311.7 ) ) ) * 43758.5453 );
+			float b = frac( sin( dot( i + float2(1,0), float2( 127.1, 311.7 ) ) ) * 43758.5453 );
+			float c = frac( sin( dot( i + float2(0,1), float2( 127.1, 311.7 ) ) ) * 43758.5453 );
+			float d = frac( sin( dot( i + float2(1,1), float2( 127.1, 311.7 ) ) ) * 43758.5453 );
+			return lerp( lerp( a, b, u.x ), lerp( c, d, u.x ), u.y );
+		}
+
 		ENDHLSL
 
 		
@@ -307,6 +326,7 @@ Shader "Raygeas/URP/Water"
 			#define ASE_NEEDS_FRAG_WORLD_POSITION
 			#define ASE_NEEDS_FRAG_SCREEN_POSITION_NORMALIZED
 			#pragma shader_feature_local _ENABLEFOAM_ON
+			#pragma shader_feature_local _COLORBLEND_ON
 
 
 			#if defined(ASE_EARLY_Z_DEPTH_OPTIMIZE) && (SHADER_TARGET >= 45)
@@ -353,6 +373,10 @@ Shader "Raygeas/URP/Water"
 
 			CBUFFER_START(UnityPerMaterial)
 			float4 _WaterColor;
+			float4 _WaterColor2;
+			float4 _WaterDepthColor;
+			float _ColorBlendScale;
+			float _ColorBlendStrength;
 			float _WavesSpeed;
 			float _Tiling;
 			float _NormalIntensity;
@@ -685,7 +709,25 @@ Shader "Raygeas/URP/Water"
 				float screenDepth384 = LinearEyeDepth(SHADERGRAPH_SAMPLE_SCENE_DEPTH( ScreenPosNorm.xy ),_ZBufferParams);
 				float distanceDepth384 = saturate( abs( ( screenDepth384 - LinearEyeDepth( ScreenPosNorm.z,_ZBufferParams ) ) / ( _Transparency ) ) );
 				float saferPower405 = abs( distanceDepth384 );
+				#ifdef _COLORBLEND_ON
+				float2 _cbUV1 = PositionWS.xz * _ColorBlendScale;
+				float2 _cbUV2 = _cbUV1 * 1.7 + float2( 5.3, 1.9 );
+				float4 lerpResult389 = lerp( Refractions282 ,
+					lerp( lerp( _WaterColor, _WaterColor2, ASE_WaterSmoothNoise( _cbUV1 ) * _ColorBlendStrength ),
+					      _WaterDepthColor, ASE_WaterSmoothNoise( _cbUV2 ) * _ColorBlendStrength * 0.5 ),
+					pow( saferPower405 , _TransparencyFade ));
+				#else
+				#ifdef _COLORBLEND_ON
+				float2 _cbUV1 = PositionWS.xz * _ColorBlendScale;
+				float2 _cbUV2 = _cbUV1 * 1.7 + float2( 5.3, 1.9 );
+				float4 lerpResult389 = lerp( Refractions282 ,
+					lerp( lerp( _WaterColor, _WaterColor2, ASE_WaterSmoothNoise( _cbUV1 ) * _ColorBlendStrength ),
+					      _WaterDepthColor, ASE_WaterSmoothNoise( _cbUV2 ) * _ColorBlendStrength * 0.5 ),
+					pow( saferPower405 , _TransparencyFade ));
+				#else
 				float4 lerpResult389 = lerp( Refractions282 , _WaterColor , pow( saferPower405 , _TransparencyFade ));
+				#endif
+				#endif
 				float time61 = ( Time525 * 5 );
 				float2 voronoiSmoothId61 = 0;
 				float2 coords61 = WorldSpaceTile68 * _FoamTiling;
@@ -1060,6 +1102,10 @@ Shader "Raygeas/URP/Water"
 
 			CBUFFER_START(UnityPerMaterial)
 			float4 _WaterColor;
+			float4 _WaterColor2;
+			float4 _WaterDepthColor;
+			float _ColorBlendScale;
+			float _ColorBlendStrength;
 			float _WavesSpeed;
 			float _Tiling;
 			float _NormalIntensity;
@@ -1325,6 +1371,7 @@ Shader "Raygeas/URP/Water"
 			#define ASE_NEEDS_WORLD_POSITION
 			#define ASE_NEEDS_FRAG_WORLD_POSITION
 			#pragma shader_feature_local _ENABLEFOAM_ON
+			#pragma shader_feature_local _COLORBLEND_ON
 
 
 			struct Attributes
@@ -1354,6 +1401,10 @@ Shader "Raygeas/URP/Water"
 
 			CBUFFER_START(UnityPerMaterial)
 			float4 _WaterColor;
+			float4 _WaterColor2;
+			float4 _WaterDepthColor;
+			float _ColorBlendScale;
+			float _ColorBlendStrength;
 			float _WavesSpeed;
 			float _Tiling;
 			float _NormalIntensity;
@@ -1616,7 +1667,25 @@ Shader "Raygeas/URP/Water"
 				float screenDepth384 = LinearEyeDepth(SHADERGRAPH_SAMPLE_SCENE_DEPTH( ase_positionSSNorm.xy ),_ZBufferParams);
 				float distanceDepth384 = saturate( abs( ( screenDepth384 - LinearEyeDepth( ase_positionSSNorm.z,_ZBufferParams ) ) / ( _Transparency ) ) );
 				float saferPower405 = abs( distanceDepth384 );
+				#ifdef _COLORBLEND_ON
+				float2 _cbUV1 = PositionWS.xz * _ColorBlendScale;
+				float2 _cbUV2 = _cbUV1 * 1.7 + float2( 5.3, 1.9 );
+				float4 lerpResult389 = lerp( Refractions282 ,
+					lerp( lerp( _WaterColor, _WaterColor2, ASE_WaterSmoothNoise( _cbUV1 ) * _ColorBlendStrength ),
+					      _WaterDepthColor, ASE_WaterSmoothNoise( _cbUV2 ) * _ColorBlendStrength * 0.5 ),
+					pow( saferPower405 , _TransparencyFade ));
+				#else
+				#ifdef _COLORBLEND_ON
+				float2 _cbUV1 = PositionWS.xz * _ColorBlendScale;
+				float2 _cbUV2 = _cbUV1 * 1.7 + float2( 5.3, 1.9 );
+				float4 lerpResult389 = lerp( Refractions282 ,
+					lerp( lerp( _WaterColor, _WaterColor2, ASE_WaterSmoothNoise( _cbUV1 ) * _ColorBlendStrength ),
+					      _WaterDepthColor, ASE_WaterSmoothNoise( _cbUV2 ) * _ColorBlendStrength * 0.5 ),
+					pow( saferPower405 , _TransparencyFade ));
+				#else
 				float4 lerpResult389 = lerp( Refractions282 , _WaterColor , pow( saferPower405 , _TransparencyFade ));
+				#endif
+				#endif
 				float time61 = ( Time525 * 5 );
 				float2 voronoiSmoothId61 = 0;
 				float2 coords61 = WorldSpaceTile68 * _FoamTiling;
@@ -1728,6 +1797,7 @@ Shader "Raygeas/URP/Water"
 			#define ASE_NEEDS_WORLD_POSITION
 			#define ASE_NEEDS_FRAG_WORLD_POSITION
 			#pragma shader_feature_local _ENABLEFOAM_ON
+			#pragma shader_feature_local _COLORBLEND_ON
 
 
 			struct Attributes
@@ -1750,6 +1820,10 @@ Shader "Raygeas/URP/Water"
 
 			CBUFFER_START(UnityPerMaterial)
 			float4 _WaterColor;
+			float4 _WaterColor2;
+			float4 _WaterDepthColor;
+			float _ColorBlendScale;
+			float _ColorBlendStrength;
 			float _WavesSpeed;
 			float _Tiling;
 			float _NormalIntensity;
@@ -2006,7 +2080,25 @@ Shader "Raygeas/URP/Water"
 				float screenDepth384 = LinearEyeDepth(SHADERGRAPH_SAMPLE_SCENE_DEPTH( ase_positionSSNorm.xy ),_ZBufferParams);
 				float distanceDepth384 = saturate( abs( ( screenDepth384 - LinearEyeDepth( ase_positionSSNorm.z,_ZBufferParams ) ) / ( _Transparency ) ) );
 				float saferPower405 = abs( distanceDepth384 );
+				#ifdef _COLORBLEND_ON
+				float2 _cbUV1 = PositionWS.xz * _ColorBlendScale;
+				float2 _cbUV2 = _cbUV1 * 1.7 + float2( 5.3, 1.9 );
+				float4 lerpResult389 = lerp( Refractions282 ,
+					lerp( lerp( _WaterColor, _WaterColor2, ASE_WaterSmoothNoise( _cbUV1 ) * _ColorBlendStrength ),
+					      _WaterDepthColor, ASE_WaterSmoothNoise( _cbUV2 ) * _ColorBlendStrength * 0.5 ),
+					pow( saferPower405 , _TransparencyFade ));
+				#else
+				#ifdef _COLORBLEND_ON
+				float2 _cbUV1 = PositionWS.xz * _ColorBlendScale;
+				float2 _cbUV2 = _cbUV1 * 1.7 + float2( 5.3, 1.9 );
+				float4 lerpResult389 = lerp( Refractions282 ,
+					lerp( lerp( _WaterColor, _WaterColor2, ASE_WaterSmoothNoise( _cbUV1 ) * _ColorBlendStrength ),
+					      _WaterDepthColor, ASE_WaterSmoothNoise( _cbUV2 ) * _ColorBlendStrength * 0.5 ),
+					pow( saferPower405 , _TransparencyFade ));
+				#else
 				float4 lerpResult389 = lerp( Refractions282 , _WaterColor , pow( saferPower405 , _TransparencyFade ));
+				#endif
+				#endif
 				float time61 = ( Time525 * 5 );
 				float2 voronoiSmoothId61 = 0;
 				float2 coords61 = WorldSpaceTile68 * _FoamTiling;
@@ -2171,6 +2263,10 @@ Shader "Raygeas/URP/Water"
 
 			CBUFFER_START(UnityPerMaterial)
 			float4 _WaterColor;
+			float4 _WaterColor2;
+			float4 _WaterDepthColor;
+			float _ColorBlendScale;
+			float _ColorBlendStrength;
 			float _WavesSpeed;
 			float _Tiling;
 			float _NormalIntensity;
@@ -2560,6 +2656,7 @@ Shader "Raygeas/URP/Water"
 			#define ASE_NEEDS_FRAG_WORLD_POSITION
 			#define ASE_NEEDS_FRAG_SCREEN_POSITION_NORMALIZED
 			#pragma shader_feature_local _ENABLEFOAM_ON
+			#pragma shader_feature_local _COLORBLEND_ON
 
 
 			#if defined(ASE_EARLY_Z_DEPTH_OPTIMIZE) && (SHADER_TARGET >= 45)
@@ -2606,6 +2703,10 @@ Shader "Raygeas/URP/Water"
 
 			CBUFFER_START(UnityPerMaterial)
 			float4 _WaterColor;
+			float4 _WaterColor2;
+			float4 _WaterDepthColor;
+			float _ColorBlendScale;
+			float _ColorBlendStrength;
 			float _WavesSpeed;
 			float _Tiling;
 			float _NormalIntensity;
@@ -2931,7 +3032,25 @@ Shader "Raygeas/URP/Water"
 				float screenDepth384 = LinearEyeDepth(SHADERGRAPH_SAMPLE_SCENE_DEPTH( ScreenPosNorm.xy ),_ZBufferParams);
 				float distanceDepth384 = saturate( abs( ( screenDepth384 - LinearEyeDepth( ScreenPosNorm.z,_ZBufferParams ) ) / ( _Transparency ) ) );
 				float saferPower405 = abs( distanceDepth384 );
+				#ifdef _COLORBLEND_ON
+				float2 _cbUV1 = PositionWS.xz * _ColorBlendScale;
+				float2 _cbUV2 = _cbUV1 * 1.7 + float2( 5.3, 1.9 );
+				float4 lerpResult389 = lerp( Refractions282 ,
+					lerp( lerp( _WaterColor, _WaterColor2, ASE_WaterSmoothNoise( _cbUV1 ) * _ColorBlendStrength ),
+					      _WaterDepthColor, ASE_WaterSmoothNoise( _cbUV2 ) * _ColorBlendStrength * 0.5 ),
+					pow( saferPower405 , _TransparencyFade ));
+				#else
+				#ifdef _COLORBLEND_ON
+				float2 _cbUV1 = PositionWS.xz * _ColorBlendScale;
+				float2 _cbUV2 = _cbUV1 * 1.7 + float2( 5.3, 1.9 );
+				float4 lerpResult389 = lerp( Refractions282 ,
+					lerp( lerp( _WaterColor, _WaterColor2, ASE_WaterSmoothNoise( _cbUV1 ) * _ColorBlendStrength ),
+					      _WaterDepthColor, ASE_WaterSmoothNoise( _cbUV2 ) * _ColorBlendStrength * 0.5 ),
+					pow( saferPower405 , _TransparencyFade ));
+				#else
 				float4 lerpResult389 = lerp( Refractions282 , _WaterColor , pow( saferPower405 , _TransparencyFade ));
+				#endif
+				#endif
 				float time61 = ( Time525 * 5 );
 				float2 voronoiSmoothId61 = 0;
 				float2 coords61 = WorldSpaceTile68 * _FoamTiling;
@@ -3178,6 +3297,10 @@ Shader "Raygeas/URP/Water"
 
 			CBUFFER_START(UnityPerMaterial)
 			float4 _WaterColor;
+			float4 _WaterColor2;
+			float4 _WaterDepthColor;
+			float _ColorBlendScale;
+			float _ColorBlendStrength;
 			float _WavesSpeed;
 			float _Tiling;
 			float _NormalIntensity;
@@ -3483,6 +3606,10 @@ Shader "Raygeas/URP/Water"
 
 			CBUFFER_START(UnityPerMaterial)
 			float4 _WaterColor;
+			float4 _WaterColor2;
+			float4 _WaterDepthColor;
+			float _ColorBlendScale;
+			float _ColorBlendStrength;
 			float _WavesSpeed;
 			float _Tiling;
 			float _NormalIntensity;
