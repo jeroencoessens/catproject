@@ -406,7 +406,7 @@
                 {
                     "name": "",
                     "id": "9bf83916-96b1-43b5-80ee-502c3f44fe37",
-                    "path": "<Pointer>/delta",
+                    "path": "<Mouse>/delta",
                     "interactions": "",
                     "processors": "",
                     "groups": ";Keyboard&Mouse;Touch;Keyboard and Mouse",
