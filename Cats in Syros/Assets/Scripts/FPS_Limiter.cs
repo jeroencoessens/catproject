@@ -25,6 +25,8 @@ public class FPS_Limiter : MonoBehaviour
     public TMP_Text m_FPSText;
     public bool showFpsText = true;
     public bool fpsIsLimited = false;
+    public float fpsUpdateTime = 0.5f;
+    private float fpsTimer = 0f;
     
     public static FPS_Limiter instance;
     
@@ -53,7 +55,11 @@ public class FPS_Limiter : MonoBehaviour
     
     private void UpdateFPSText()
     {
-        var fps = ((int)1.0f / Time.smoothDeltaTime);
+        fpsTimer += Time.deltaTime;
+        if (fpsTimer < fpsUpdateTime) return;
+        fpsTimer = 0f;
+
+        var fps = (int)1.0f / Time.smoothDeltaTime;
         var color = Color.white;
         if (fps > 90) color = Color.green;
         if (fps < 60) color = Color.yellow;

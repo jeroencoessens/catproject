@@ -1,5 +1,7 @@
 using UnityEngine;
+#if UNITY_EDITOR
 using UnityEditor;
+#endif
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Globalization;
@@ -98,7 +100,9 @@ public class SyrosTerrainEngine : MonoBehaviour
 
         try
         {
+#if UNITY_EDITOR
             EditorUtility.DisplayProgressBar("Syros Terrain", "Initialising…", 0f);
+#endif
 
             Terrain terrain = GetComponent<Terrain>();
             ApplyURPShader(terrain);
@@ -109,12 +113,16 @@ public class SyrosTerrainEngine : MonoBehaviour
             Debug.Log($"[SyrosEngine] Heightmap res: {res}, bounds: lon [{MinLon},{MaxLon}] lat [{MinLat},{MaxLat}]");
 
             // Step 1 — Parse features and build coordinate map
+#if UNITY_EDITOR
             EditorUtility.DisplayProgressBar("Syros Terrain", "Parsing features…", 0.05f);
+#endif
             OSMData data = JsonUtility.FromJson<OSMData>(rawJson);
             var featureCoords = BuildFeatureCoordMap(rawJson, data.features.Count);
 
             // Step 2 — Resolve anchor POI names to grid positions
+#if UNITY_EDITOR
             EditorUtility.DisplayProgressBar("Syros Terrain", "Resolving anchors…", 0.12f);
+#endif
             var resolved = ResolveAnchors(data, featureCoords, res);
 
             // Step 3 — Compute heightmap
@@ -135,7 +143,9 @@ public class SyrosTerrainEngine : MonoBehaviour
             // Step 4 — Optional density overlay for surface texture
             if (densityBlend > 0f)
             {
+#if UNITY_EDITOR
                 EditorUtility.DisplayProgressBar("Syros Terrain", "Computing density overlay…", 0.65f);
+#endif
                 float[,] density = BinCoordinates(rawJson, res);
                 density = GaussianBlur(density, res, densityBlurRadius);
                 NormalizeDensity(density, res);
@@ -143,21 +153,29 @@ public class SyrosTerrainEngine : MonoBehaviour
             }
 
             // Step 5 — Apply to terrain
+#if UNITY_EDITOR
             EditorUtility.DisplayProgressBar("Syros Terrain", "Applying heightmap…", 0.85f);
+#endif
             terrain.terrainData.size = new Vector3(terrainScale, maxElevation, terrainScale);
             terrain.terrainData.SetHeights(0, 0, heights);
 
             // Step 6 — Spawn POI markers
+#if UNITY_EDITOR
             EditorUtility.DisplayProgressBar("Syros Terrain", "Spawning POIs…", 0.92f);
+#endif
             SpawnPOIMarkers(data, featureCoords, terrain);
 
+#if UNITY_EDITOR
             EditorUtility.DisplayProgressBar("Syros Terrain", "Done!", 1f);
+#endif
             Debug.Log("[SyrosEngine] Generation complete.");
             return true;
         }
         finally
         {
+#if UNITY_EDITOR
             EditorUtility.ClearProgressBar();
+#endif
         }
     }
 
@@ -221,10 +239,13 @@ public class SyrosTerrainEngine : MonoBehaviour
         float[,] grid = new float[res, res];
         float sigma2x2 = 2f * sigma * sigma;
         float bgWeight = 0.001f;                 // pulls distant pixels toward baseHeight
+#if UNITY_EDITOR
         int progressStep = Mathf.Max(1, res / 30);
+#endif
 
         for (int r = 0; r < res; r++)
         {
+#if UNITY_EDITOR
             if (r % progressStep == 0)
             {
                 float p = 0.15f + 0.45f * ((float)r / res);
@@ -235,6 +256,7 @@ public class SyrosTerrainEngine : MonoBehaviour
                     return grid;
                 }
             }
+#endif
 
             for (int c = 0; c < res; c++)
             {
@@ -454,7 +476,11 @@ public class SyrosTerrainEngine : MonoBehaviour
             Vector3 pos = new Vector3(nx * terrainScale, 0f, ny * terrainScale) + transform.position;
             pos.y = terrain.SampleHeight(pos) + markerYOffset;
 
+#if UNITY_EDITOR
             GameObject marker = (GameObject)PrefabUtility.InstantiatePrefab(markerPrefab);
+#else
+            GameObject marker = Instantiate(markerPrefab);
+#endif
             marker.transform.position = pos;
             marker.transform.localScale = Vector3.one * markerScale;
             marker.transform.SetParent(transform);
@@ -482,6 +508,7 @@ public class SyrosTerrainEngine : MonoBehaviour
     }
 }
 
+#if UNITY_EDITOR
 // ── CUSTOM INSPECTOR ──────────────────────────────────────────────────────
 [CustomEditor(typeof(SyrosTerrainEngine))]
 public class SyrosTerrainEditor : Editor
@@ -506,3 +533,4 @@ public class SyrosTerrainEditor : Editor
             MessageType.Info);
     }
 }
+#endif
